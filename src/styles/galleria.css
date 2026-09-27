@@ -1,0 +1,100 @@
+/* PAGINA GALLERIA */
+.gallery-page {
+  min-height: 100vh;
+}
+
+.gallery-page-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 18px 32px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(0,0,0,0.78), transparent);
+}
+
+.gallery-back-home {
+  padding: 10px 16px;
+  color: #fff;
+  background: rgba(8, 15, 22, 0.78);
+  border: 1px solid rgba(176, 141, 47, 0.7);
+  border-radius: 999px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.gallery-back-home:hover {
+  color: #D4AF37;
+  border-color: #D4AF37;
+}
+
+.gallery-page-section {
+  width: 100%;
+  max-width: 1280px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 130px clamp(16px, 4vw, 48px) 70px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.gallery-page-title {
+  margin: 0 0 clamp(28px, 5vw, 56px);
+  font-family: 'Pirata One', Georgia, serif;
+  font-size: clamp(2.5rem, 6vw, 4.4rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: clamp(2px, 0.5vw, 6px);
+  text-transform: uppercase;
+  color: #B08D2F;
+  -webkit-text-stroke: 1.5px #000;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
+    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
+}
+
+.gallery-grid {
+  columns: 3 280px;
+  column-gap: clamp(14px, 2vw, 24px);
+}
+
+.gallery-card {
+  margin: 0 0 clamp(14px, 2vw, 24px);
+  overflow: hidden;
+  break-inside: avoid;
+  background: rgba(8, 15, 22, 0.78);
+  border: 1px solid rgba(176, 141, 47, 0.55);
+  border-radius: clamp(12px, 1.5vw, 20px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.gallery-card:hover {
+  border-color: #D4AF37;
+  box-shadow: 0 0 10px rgba(212,175,55,0.8),
+    0 0 24px rgba(212,175,55,0.45), 0 16px 34px rgba(0,0,0,0.55);
+  transform: translateY(-3px);
+}
+
+.gallery-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .gallery-page-header { padding: 14px 16px; }
+  .gallery-page-header .logo-full { height: 46px; }
+  .gallery-back-home { padding: 8px 12px; font-size: 0.82rem; }
+  .gallery-page-section { padding-top: 105px; }
+  .gallery-grid { columns: 2 150px; }
+}
+
+@media (max-width: 480px) {
+  .gallery-grid { columns: 1; }
+}

@@ -1,0 +1,97 @@
+@font-face {
+  font-family: 'Pirata One';
+  src: url('../assets/fonts/pirata-one.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* STILI GENERALI */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  color: white;
+  background: black;
+  overflow-x: hidden;
+}
+
+.scroll-container {
+  position: relative;
+  width: 100%;
+  background-image: url('/images/Tramonto.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* NAVIGAZIONE */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  z-index: 1000;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.top-nav * { pointer-events: auto; }
+.brand { display: flex; align-items: center; text-decoration: none; }
+.logo-full { height: 60px; width: auto; object-fit: contain; }
+.nav-links { display: flex; gap: 25px; align-items: center; }
+
+.nav-item {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
+}
+
+.nav-item:hover { color: white; }
+.lang-control { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.lang.active { color: white; font-weight: bold; }
+
+/* STRUTTURA COMUNE */
+.main-content {
+  position: relative;
+  width: 100%;
+}
+
+.content-section {
+  position: relative;
+}
+
+.content-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.35) 0%,
+    rgba(0,0,0,0.55) 50%,
+    rgba(0,0,0,0.35) 100%
+  );
+}
+
+.content-section > * {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+}
