@@ -10,15 +10,12 @@ export default function SiteNav({ activeSection }) {
   return (
     <nav className="top-nav">
       <a
-        href="#"
+        href="/#hero"
         className="brand"
-        onClick={(event) => {
-          event.preventDefault();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
+
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/Makai-grandline.PNG`}
+          src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.PNG`}
           alt="Makai Grand Line"
           className="logo-full"
         />
@@ -27,7 +24,7 @@ export default function SiteNav({ activeSection }) {
         {navItems.map((item) => (
           <a
             key={item.id}
-            href={item.href || `#${item.id}`}
+            href={item.href || `/#${item.id}`}
             className={`nav-item ${activeSection === item.name ? "active" : ""}`}
           >
             {item.name}

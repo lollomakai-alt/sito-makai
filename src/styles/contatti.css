@@ -59,6 +59,7 @@
   padding: clamp(28px, 5vw, 52px);
   font-family: Georgia, 'Times New Roman', serif;
   font-style: normal;
+  font-weight: 700;
   text-align: left;
   background: rgba(8, 15, 22, 0.78);
   border: 1px solid rgba(176, 141, 47, 0.55);

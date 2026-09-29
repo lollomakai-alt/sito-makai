@@ -10,10 +10,10 @@ export default function MakaiChat({ isOpen, onClose }) {
 
   // Domande reimpostate e usabili (Quick Prompts)
   const quickQuestions = [
-    "Quali sono i vostri Poke più famosi?",
-    "Avete cocktail Tiki col rum scuro?",
-    "Voglio prenotare un tavolo per stasera.",
-    "A che ora chiudete?"
+      "Vorrei prenotare un tavolo.",
+      "Cosa mi consigli dal menu?",
+      "Avete pacchetti per feste o eventi?",
+      "Posso organizzare un compleanno da voi?"
   ];
 
   // Scroll automatico in basso quando arriva un messaggio
@@ -66,7 +66,7 @@ export default function MakaiChat({ isOpen, onClose }) {
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div> {/* Indicatore Online */}
             <span className="text-3xl">🗿</span>
             <div>
-              <h3 className="font-bold text-white tracking-wide">Makai Concierge IA</h3>
+              <h3 className="font-bold text-white tracking-wide">Nostromo Bot</h3>
               <p className="text-xs text-green-300">Online - Esperto di One Piece</p>
             </div>
           </div>

@@ -7,7 +7,7 @@ export default function ContactsSection({ onOpenChat }) {
       <div className="contacts-layout">
         <div className="contacts-totem" aria-hidden="true">
           <img
-            src={`${import.meta.env.BASE_URL}images/logo-totem.png`}
+            src={`${import.meta.env.BASE_URL}images/logo/logo-totem.png`}
             alt=""
             width="466"
             height="894"

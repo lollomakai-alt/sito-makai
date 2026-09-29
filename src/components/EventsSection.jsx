@@ -1,14 +1,33 @@
-import { useRef } from "react";
-
-const eventImages = [
-  { src: "images/SALA.PNG", alt: "Sala del Makai allestita per gli eventi" },
-  { src: "images/SALA7.PNG", alt: "Atmosfera della sala del Makai" },
-  { src: "images/sala.JPG", alt: "Dettagli pirateschi della sala del Makai" },
-  { src: "images/sala2.png", alt: "Spazi interni del Makai" },
-];
+import { useEffect, useRef, useState } from "react";
+import { eventImages } from "virtual:event-images";
 
 export default function EventsSection() {
   const galleryRef = useRef(null);
+  const [isGalleryPaused, setIsGalleryPaused] = useState(false);
+
+  useEffect(() => {
+    if (isGalleryPaused) return undefined;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let intervalId;
+    const updateAutoplay = () => {
+      window.clearInterval(intervalId);
+      if (reducedMotion.matches) return;
+      intervalId = window.setInterval(() => {
+        const gallery = galleryRef.current;
+        if (!gallery || !gallery.clientWidth || !gallery.children.length) return;
+        const currentIndex = Math.round(gallery.scrollLeft / gallery.clientWidth);
+        const nextIndex = (currentIndex + 1) % gallery.children.length;
+        gallery.scrollTo({ left: nextIndex * gallery.clientWidth, behavior: "smooth" });
+      }, 3500);
+    };
+    updateAutoplay();
+    reducedMotion.addEventListener("change", updateAutoplay);
+    return () => {
+      window.clearInterval(intervalId);
+      reducedMotion.removeEventListener("change", updateAutoplay);
+    };
+  }, [isGalleryPaused]);
 
   const scrollGallery = (direction) => {
     const gallery = galleryRef.current;
@@ -16,7 +35,7 @@ export default function EventsSection() {
 
     gallery.scrollBy({
       left: direction * gallery.clientWidth,
-      behavior: "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
     });
   };
 
@@ -36,7 +55,17 @@ export default function EventsSection() {
           </p>
         </div>
 
-        <div className="events-gallery-panel">
+        <div
+          className="events-gallery-panel"
+          onMouseEnter={() => setIsGalleryPaused(true)}
+          onMouseLeave={() => setIsGalleryPaused(false)}
+          onFocus={() => setIsGalleryPaused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setIsGalleryPaused(false);
+            }
+          }}
+        >
           <div
             ref={galleryRef}
             className="events-gallery"

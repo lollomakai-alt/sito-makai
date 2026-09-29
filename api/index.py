@@ -1,77 +1,64 @@
 import os
 import time
-import hmac
 import asyncio
 import logging
+from pathlib import Path
 from collections import defaultdict, deque
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import List, Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Request, Header
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 import bookings
-import email_sender
-from automatic_chat import answer_message
-from menu_data import MAKAI_DATA
+from bookings.calendar_summary import month_summary
+from admin_auth import router as auth_router, require_admin, require_browser_action
+from bookings.maintenance import cleanup_loop
+from automatic_chat import answer_chat
+from menu_data import get_menu_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("makai")
 
 
-# ---------------------------------------------------------------------------
-# Promemoria via email: ogni minuto controlla le prenotazioni a <= 4 ore
-# ---------------------------------------------------------------------------
-_last_purge = 0.0
-
-
-def process_reminders():
-    global _last_purge
-    # pulizia: elimina le prenotazioni vecchie (al massimo una volta all'ora)
-    if time.time() - _last_purge > 3600:
-        _last_purge = time.time()
-        try:
-            n = bookings.purge_old_bookings()
-            if n:
-                logger.info("Eliminate %s prenotazioni vecchie", n)
-        except Exception:
-            logger.exception("Errore nella pulizia delle prenotazioni")
-
-    if not email_sender.is_configured():
-        return
-    for b in bookings.due_reminders():
-        if not bookings.claim_reminder(b["id"]):
-            continue  # già preso in carico da un altro worker
-        ok = email_sender.send_reminder(
-            b["id"], b["email"], b["name"], b["booking_date"], b["booking_time"], b["party_size"]
-        )
-        bookings.finish_reminder(b["id"], ok)
-
-
-async def reminder_loop():
-    while True:
-        try:
-            await asyncio.to_thread(process_reminders)
-        except Exception:
-            logger.exception("Errore nel ciclo promemoria")
-        await asyncio.sleep(60)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    database_ready = False
     if bookings.DATABASE_URL:
-        bookings.init_db()
+        try:
+            bookings.init_db()
+            database_ready = True
+        except Exception:
+            logger.warning("Database prenotazioni non raggiungibile: agenda disattivata.")
     else:
-        logger.warning("Supabase non configurato: prenotazioni e promemoria disattivati.")
-    if not email_sender.is_configured():
-        logger.warning("Email (SMTP) non configurata: i promemoria NON verranno inviati.")
-    task = asyncio.create_task(reminder_loop()) if bookings.DATABASE_URL else None
-    yield
-    if task:
-        task.cancel()
+        logger.warning("Supabase non configurato: prenotazioni disattivate.")
+    cleanup_enabled = os.environ.get("BOOKINGS_AUTO_CLEANUP", "false").lower() == "true"
+    task = asyncio.create_task(cleanup_loop()) if database_ready and cleanup_enabled else None
+    try:
+        yield
+    finally:
+        if task:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
 
 app = FastAPI(title="Makai Grand Line API", lifespan=lifespan)
+app.include_router(auth_router)
+
+
+@app.middleware("http")
+async def private_admin_responses(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/admin/") or request.url.path == "/api/chat":
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Vary"] = "Cookie"
+    return response
+
 
 # CORS: solo i domini autorizzati (imposta ALLOWED_ORIGINS in produzione)
 ALLOWED_ORIGINS = [
@@ -87,13 +74,13 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-Admin-Key"],
+    allow_headers=["Content-Type"],
 )
 
 # ---------------------------------------------------------------------------
 # Rate limit semplice per IP (in memoria)
 # ---------------------------------------------------------------------------
-RATE_LIMIT = 10
+RATE_LIMIT = 30
 RATE_WINDOW = 60
 _hits = defaultdict(deque)
 
@@ -128,64 +115,72 @@ class HistoryItem(BaseModel):
 class ChatMessage(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: List[HistoryItem] = Field(default_factory=list, max_length=10)
+    session_token: Optional[str] = Field(default=None, max_length=8192)
 
 
+@app.get("/", include_in_schema=False)
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "project": "Makai Grand Line Backend"}
 
 
 @app.get("/api/menu")
-async def get_menu():
-    return MAKAI_DATA
+def get_menu():
+    try:
+        return get_menu_data()
+    except RuntimeError as error:
+        logger.error("Menu Supabase non disponibile: %s", error)
+        raise HTTPException(
+            status_code=503,
+            detail="Menu momentaneamente non disponibile.",
+        ) from error
+    except Exception as error:
+        logger.exception("Errore durante la lettura del menu da Supabase")
+        raise HTTPException(
+            status_code=503,
+            detail="Menu momentaneamente non disponibile.",
+        ) from error
 
 
 @app.post("/api/chat")
 def automatic_chat(body: ChatMessage, request: Request):
     check_rate_limit(request)
-    return {"reply": answer_message(body.message)}
+    return answer_chat(body.message, body.session_token)
 
 
 # ---------------------------------------------------------------------------
-# Agenda per il gestore (protetta da chiave: header X-Admin-Key)
+# Agenda per il gestore (sessione richiesta anche per le chiamate API dirette)
 # ---------------------------------------------------------------------------
-ADMIN_KEY = os.environ.get("ADMIN_API_KEY")
-
-
-def require_admin(x_admin_key: Optional[str]):
-    if not ADMIN_KEY:
-        raise HTTPException(status_code=503, detail="Admin non configurato.")
-    if not x_admin_key or not hmac.compare_digest(x_admin_key, ADMIN_KEY):
-        raise HTTPException(status_code=401, detail="Non autorizzato.")
-
-
 @app.get("/api/admin/bookings")
-def admin_list(date: Optional[str] = None, x_admin_key: Optional[str] = Header(default=None)):
-    require_admin(x_admin_key)
+def admin_list(request: Request, response: Response, date: Optional[str] = None):
+    require_admin(request)
+    response.headers["Cache-Control"] = "no-store"
     day = date or bookings.now_local().strftime("%Y-%m-%d")
-    return {"date": day, "bookings": bookings.list_day(day)}
+    try:
+        rows = bookings.list_day(day)
+    except Exception:
+        logger.warning("Agenda non disponibile: controllare connessione e tabella prenotazioni.")
+        raise HTTPException(status_code=503, detail="Agenda non disponibile: controlla il database prenotazioni.") from None
+    return {"date": day, "bookings": rows}
+
+
+@app.get("/api/admin/bookings/month")
+def admin_month(request: Request, month: str):
+    require_admin(request)
+    try:
+        days = month_summary(month)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Mese non valido: usa AAAA-MM.") from None
+    except Exception:
+        logger.warning("Riepilogo mensile non disponibile.")
+        raise HTTPException(status_code=503, detail="Calendario non disponibile: controlla il database prenotazioni.") from None
+    return {"month": month, "days": days}
 
 
 @app.post("/api/admin/bookings/{booking_id}/cancel")
-def admin_cancel(booking_id: int, x_admin_key: Optional[str] = Header(default=None)):
-    require_admin(x_admin_key)
+def admin_cancel(booking_id: int, request: Request):
+    require_browser_action(request)
+    require_admin(request)
     if not bookings.admin_cancel(booking_id):
         raise HTTPException(status_code=404, detail="Prenotazione non trovata.")
-    return {"ok": True}
-
-
-# ---------------------------------------------------------------------------
-# Cron esterno gratuito (es. cron-job.org, ogni minuto): utile se l'hosting
-# gratuito si "addormenta". Header richiesto: X-Cron-Key = CRON_SECRET
-# ---------------------------------------------------------------------------
-CRON_SECRET = os.environ.get("CRON_SECRET")
-
-
-@app.get("/api/cron/reminders")
-def cron_reminders(x_cron_key: Optional[str] = Header(default=None)):
-    if not CRON_SECRET:
-        raise HTTPException(status_code=503, detail="Cron non configurato.")
-    if not x_cron_key or not hmac.compare_digest(x_cron_key, CRON_SECRET):
-        raise HTTPException(status_code=401, detail="Non autorizzato.")
-    process_reminders()
     return {"ok": True}

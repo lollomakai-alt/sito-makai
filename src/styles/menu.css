@@ -214,6 +214,138 @@
   font-style: italic;
 }
 
+.menu-food-detail-section {
+  justify-content: flex-start;
+}
+
+.menu-food-detail-section > .menu-detail-panel > img {
+  align-self: center;
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.menu-food-categories {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 4vw, 48px);
+  width: 100%;
+  max-width: 1000px;
+  margin: clamp(28px, 5vw, 60px) auto 0;
+}
+
+.menu-food-category-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  min-height: 320px;
+  overflow: hidden;
+  background: rgba(8, 15, 22, 0.82);
+  border: 1px solid rgba(176, 141, 47, 0.65);
+  border-radius: clamp(16px, 2vw, 26px);
+  box-shadow: 0 18px 46px rgba(0,0,0,0.58);
+  text-align: left;
+}
+
+.menu-food-category-panel.is-reversed .menu-food-category-copy {
+  order: 2;
+}
+
+.menu-food-category-panel.is-reversed .menu-food-category-media {
+  order: 1;
+}
+
+.menu-food-category-copy {
+  padding: clamp(30px, 5vw, 60px);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.menu-food-category-copy h2 {
+  margin: 0;
+  color: #B08D2F;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.1;
+}
+
+.menu-food-items {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.menu-food-item {
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(176, 141, 47, 0.3);
+}
+
+.menu-food-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.menu-food-item-heading {
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.menu-food-item h3 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  line-height: 1.3;
+}
+
+.menu-food-item-heading span {
+  flex: 0 0 auto;
+  color: #D4AF37;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.menu-food-item p {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,0.82);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.menu-food-status {
+  margin: 0;
+  padding: 18px 22px;
+  color: #F5DEB3;
+  background: rgba(8, 15, 22, 0.82);
+  border: 1px solid rgba(176, 141, 47, 0.65);
+  border-radius: 14px;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+
+.menu-food-error {
+  color: #fff;
+}
+
+.menu-food-category-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  background: rgba(255,255,255,0.025);
+  border-left: 1px solid rgba(176, 141, 47, 0.2);
+}
+
+.menu-food-category-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.menu-food-category-panel.is-reversed .menu-food-category-media {
+  border-right: 1px solid rgba(176, 141, 47, 0.2);
+  border-left: 0;
+}
+
 @media (max-width: 768px) {
   .menu-panels { grid-template-columns: 1fr; }
   .menu-detail-header { padding: 14px 16px; }
@@ -222,4 +354,44 @@
   .menu-detail-section { padding-top: 105px; }
   .menu-detail-panel { grid-template-columns: 1fr; }
   .menu-detail-panel > img { height: min(105vw, 500px); min-height: 0; }
+  .menu-food-category-panel { grid-template-columns: 1fr; min-height: 0; }
+  .menu-food-category-panel .menu-food-category-copy { order: 1; }
+  .menu-food-category-panel .menu-food-category-media {
+    order: 2;
+    min-height: 220px;
+    border-top: 1px solid rgba(176, 141, 47, 0.2);
+    border-right: 0;
+    border-left: 0;
+  }
+  .menu-food-category-media img { width: 100%; height: auto; }
+}
+
+/* Foto del pannello Cocktails in colonna */
+.cocktail-carousel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: clamp(12px, 1.5vw, 20px);
+  width: 100%;
+  height: 100%;
+  padding: clamp(12px, 2vw, 20px);
+  box-sizing: border-box;
+}
+
+.cocktail-carousel img {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .cocktail-carousel img {
+    flex: 0 0 auto;
+    min-height: auto;
+    width: 100%;
+    height: auto;
+  }
 }

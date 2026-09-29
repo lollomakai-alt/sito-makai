@@ -143,6 +143,18 @@
   color: #F5DEB3;
 }
 
+.chat-phone-link {
+  color: #f0c75e;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-phone-link:hover,
+.chat-phone-link:focus-visible {
+  color: #fff;
+}
+
 .message.user {
   align-self: flex-end;
   color: #21140b;
