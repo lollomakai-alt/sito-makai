@@ -50,14 +50,15 @@
 .about-subtitle {
   max-width: 900px;
   margin: clamp(24px, 4vw, 48px) auto 0;
-  font-family:  Georgia, serif;
-  font-weight: 600;
+  font-family: Georgia, serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: 0.5px;
   text-wrap: balance;
   overflow-wrap: break-word;
   color: #fff;
-  -webkit-text-stroke: 1.0px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px 2px 0 #000, 2px 2px 0 #000, 0 3px 12px rgba(0,0,0,0.9);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.75);
 }
 
 .about-photos {
@@ -230,3 +231,10 @@
   .about-detail-section { padding-top: 110px; }
   .about-detail-photos { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 360px) {
+  .about-detail-header .logo-full { height: 36px; }
+  .about-detail-back { padding: 7px 9px; font-size: 0.72rem; }
+}
+
+/* Pulizia: rimossa definizione duplicata .about-subtitle con text-stroke */
