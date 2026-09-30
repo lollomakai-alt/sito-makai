@@ -12,7 +12,7 @@ export default function HomeMenuSection() {
             </p>
           </div>
           <img
-            src={`${import.meta.env.BASE_URL}images/drinktop.jpeg`}
+            src={`${import.meta.env.BASE_URL}images/drinktop.webp`}
             alt="Cocktail Tiki del Makai"
             width="1179"
             height="1592"
@@ -31,7 +31,7 @@ export default function HomeMenuSection() {
             </p>
           </div>
           <img
-            src={`${import.meta.env.BASE_URL}images/menutop.jpeg`}
+            src={`${import.meta.env.BASE_URL}images/menutop.webp`}
             alt="Piatti del menu Makai ispirato a One Piece"
             width="1179"
             height="1561"

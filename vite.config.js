@@ -38,7 +38,7 @@ function eventImagesPlugin() {
         for (const entry of readdirSync(directory, { withFileTypes: true })) {
           const filePath = resolve(directory, entry.name)
           if (entry.isDirectory()) {
-            if (entry.name.toLowerCase() !== 'logo') collectImages(filePath)
+            if (!['hero', 'logo'].includes(entry.name.toLowerCase())) collectImages(filePath)
           } else if (
             /\.(avif|gif|jpe?g|png|webp)$/i.test(entry.name) &&
             !isHeifImage(filePath)

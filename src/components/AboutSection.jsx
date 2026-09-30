@@ -15,7 +15,7 @@ export default function AboutSection() {
       </div>
       <div className="about-photos">
         <img
-          src={`${import.meta.env.BASE_URL}images/chi-siamo.png`}
+          src={`${import.meta.env.BASE_URL}images/chi-siamo.webp`}
           alt="Foto della sezione Chi siamo"
           width="816"
           height="980"
@@ -23,7 +23,7 @@ export default function AboutSection() {
           decoding="async"
         />
         <img
-          src={`${import.meta.env.BASE_URL}images/statua.JPG`}
+          src={`${import.meta.env.BASE_URL}images/statua.webp`}
           alt="Statua del Makai"
           width="896"
           height="1195"

@@ -63,7 +63,7 @@ export default function usePageMotion(containerRef, currentPath) {
 
     const context = gsap.context(() => {
       gsap.set(root, {
-        backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto.png)`,
+        backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto.webp)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",

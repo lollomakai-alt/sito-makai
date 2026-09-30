@@ -56,7 +56,7 @@ export default function AboutPage({ containerRef }) {
 
           <div className="about-detail-photos">
             <img
-              src={`${import.meta.env.BASE_URL}images/chi-siamo.png`}
+              src={`${import.meta.env.BASE_URL}images/chi-siamo.webp`}
               alt="Totem e arredi Tiki del Makai"
               width="816"
               height="980"
@@ -64,7 +64,7 @@ export default function AboutPage({ containerRef }) {
               decoding="async"
             />
             <img
-              src={`${import.meta.env.BASE_URL}images/statua.JPG`}
+              src={`${import.meta.env.BASE_URL}images/statua.webp`}
               alt="Statua decorativa del Makai"
               width="896"
               height="1195"
