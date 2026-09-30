@@ -283,7 +283,7 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
                   onChange={(event) => setConsensoRicordami(event.target.checked)}
                   disabled={isLoading}
                 />
-                <span>Conserva i miei dati per 1 anno (invece di 30 giorni)</span>
+                <span>Ricordati di me: conserva i miei dati per 1 anno, così prenoto più in fretta la prossima volta</span>
               </label>
               <p className="chat-consent-privacy">
                 <a className="chat-link" href="/privacy" target="_blank" rel="noopener noreferrer">

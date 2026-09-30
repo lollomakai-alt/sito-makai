@@ -67,7 +67,8 @@ def active_for_phone(phone: str) -> int:
 
 
 def create_booking(name: str, email: str, phone: str, date: str, time: str,
-                   party_size: int, notes: str = "", request_started_at=None) -> dict:
+                   party_size: int, notes: str = "", request_started_at=None,
+                   consenso_ricordami: bool = False) -> dict:
     """Salva solo dopo il sì al riepilogo; verifica limiti e tavoli nella transazione.
 
     request_started_at proviene dalla sessione firmata dal server: permette di
@@ -83,6 +84,7 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
     if not ph:
         return {"ok": False, "error": "Numero di telefono non valido."}
     notes = (notes or "").strip()[:300]
+    consenso_ricordami = bool(consenso_ricordami)
 
     with db(write=True) as c:
         # Read under the same write lock as the insert. A lost HTTP response must
@@ -114,12 +116,14 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
                     "alternative_times": _alternatives(c, dt, party_size)}
         cur = c.execute(
             "INSERT INTO bookings (name, email, phone, booking_date, booking_time, party_size, notes, "
-            "tables, status, source, reminder_status) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','ai','skipped') RETURNING id",
+            "tables, status, source, reminder_status, consenso_ricordami, consenso_data) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','ai','skipped',%s,"
+            "CASE WHEN %s THEN now() ELSE NULL END) RETURNING id",
             (name, p, ph, dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M"), party_size,
-             notes, ",".join(assigned)),
+             notes, ",".join(assigned), consenso_ricordami, consenso_ricordami),
         )
-        return {"ok": True, "booking_id": cur.fetchone()["id"], "name": name,
+        booking_id = cur.fetchone()["id"]
+        return {"ok": True, "booking_id": booking_id, "name": name,
                 "date": dt.strftime("%Y-%m-%d"), "time": dt.strftime("%H:%M"),
                 "party_size": party_size}
 
@@ -219,4 +223,3 @@ def admin_cancel(booking_id: int) -> bool:
             "UPDATE bookings SET status='cancelled' WHERE id=%s AND status='confirmed'", (booking_id,)
         )
         return cur.rowcount == 1
-

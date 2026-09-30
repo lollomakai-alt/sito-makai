@@ -49,6 +49,7 @@ export default function ContactsSection({ onOpenChat }) {
             <a href="https://www.facebook.com/MakaiSurfAndTikiBar" target="_blank" rel="noreferrer">
               Facebook
             </a>
+            <a className="privacy-link" href="/privacy">Privacy</a>
           </div>
         </div>
       </div>

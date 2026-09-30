@@ -10,6 +10,7 @@ import "./styles/eventi.css";
 import "./styles/galleria.css";
 import "./styles/contatti.css";
 import "./styles/chat.css";
+import "./styles/privacy.css";
 
 import AboutSection from "./components/AboutSection";
 import ChatWidget from "./components/ChatWidget";
@@ -22,18 +23,31 @@ import { menuPages } from "./data/siteContent";
 import AboutPage from "./pages/AboutPage";
 import GalleryPage from "./pages/GalleryPage";
 import MenuDetailPage from "./pages/MenuDetailPage";
+import Privacy from "./pages/Privacy";
 
 function App() {
   const containerRef = useRef(null);
   const [activeSection] = useState("Chi siamo");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [startBooking, setStartBooking] = useState(false);
 
   const currentPath = window.location.pathname.replace(/\/$/, "") || "/";
   const menuPage = menuPages[currentPath];
   const isGalleryPage = currentPath === "/galleria";
   const isAboutPage = currentPath === "/chi-siamo";
+  const isPrivacyPage = currentPath === "/privacy";
 
   usePageMotion(containerRef, currentPath);
+
+  function openBookingChat() {
+    setStartBooking(true);
+    setIsChatOpen(true);
+  }
+
+  function closeChat() {
+    setIsChatOpen(false);
+    setStartBooking(false);
+  }
 
   if (isGalleryPage) {
     return <GalleryPage containerRef={containerRef} />;
@@ -41,6 +55,10 @@ function App() {
 
   if (isAboutPage) {
     return <AboutPage containerRef={containerRef} />;
+  }
+
+  if (isPrivacyPage) {
+    return <Privacy />;
   }
 
   if (menuPage) {
@@ -56,13 +74,14 @@ function App() {
         <AboutSection />
         <HomeMenuSection />
         <EventsSection />
-        <ContactsSection onOpenChat={() => setIsChatOpen(true)} />
+        <ContactsSection onOpenChat={openBookingChat} />
       </main>
 
       <ChatWidget
         isOpen={isChatOpen}
+        startBooking={startBooking}
         onOpen={() => setIsChatOpen(true)}
-        onClose={() => setIsChatOpen(false)}
+        onClose={closeChat}
       />
     </div>
   );

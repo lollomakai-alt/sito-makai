@@ -201,7 +201,8 @@ def answer_message(message: str, session_id: str) -> str:
     return result["reply"] if isinstance(result, dict) else str(result)
 
 
-def answer_chat(message: str, session_token: Optional[str]):
+def answer_chat(message: str, session_token: Optional[str],
+                consenso_ricordami: bool = False):
     """Unica sessione firmata per informazioni, preferenze e prenotazioni."""
     state = None
     if session_token:
@@ -225,12 +226,16 @@ def answer_chat(message: str, session_token: Optional[str]):
 
     def respond(reply, booking_state=None):
         outgoing = dict(booking_state or {"step": "assistente"})
+        show_booking_consents = outgoing.get("step") == "consensi"
         reply_count = int(context.get("reply_count", 0))
         reply = _pirate_reply(reply, reply_count)
         context["reply_count"] = reply_count + 1
         outgoing["context"] = context
         try:
-            return _reply(reply, outgoing)
+            response = _reply(reply, outgoing)
+            if show_booking_consents:
+                response["show_booking_consents"] = True
+            return response
         except RuntimeError:
             # Basic information remains usable if session configuration is missing.
             return {"reply": reply, "session_token": None}
@@ -272,7 +277,12 @@ def answer_chat(message: str, session_token: Optional[str]):
         booking_message = message
         if not token and "people" in context and people_count(text) is None:
             booking_message += f" per {context['people']} persone"
-        result = answer_booking(booking_message, token, _info)
+        result = answer_booking(
+            booking_message,
+            token,
+            _info,
+            consenso_ricordami=consenso_ricordami,
+        )
         if result is not None:
             if result.get("session_token"):
                 booking = _serializer().loads(result["session_token"], max_age=SESSION_SECONDS)

@@ -116,6 +116,7 @@ class ChatMessage(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: List[HistoryItem] = Field(default_factory=list, max_length=10)
     session_token: Optional[str] = Field(default=None, max_length=8192)
+    consenso_ricordami: bool = False
 
 
 @app.get("/", include_in_schema=False)
@@ -145,7 +146,11 @@ def get_menu():
 @app.post("/api/chat")
 def automatic_chat(body: ChatMessage, request: Request):
     check_rate_limit(request)
-    return answer_chat(body.message, body.session_token)
+    return answer_chat(
+        body.message,
+        body.session_token,
+        consenso_ricordami=body.consenso_ricordami,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -220,6 +220,60 @@
   outline: none;
 }
 
+.chat-consent-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px 15px 15px;
+  color: #f5deb3;
+  background: rgba(0,0,0,0.28);
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+  font: 0.78rem/1.35 Georgia, 'Times New Roman', serif;
+}
+
+.chat-consent-option {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 9px;
+  align-items: start;
+  cursor: pointer;
+}
+
+.chat-consent-option input {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: #d4af37;
+}
+
+.chat-consent-privacy {
+  margin: 2px 0 0;
+  color: rgba(245, 222, 179, 0.82);
+  font-size: 0.72rem;
+}
+
+.chat-link {
+  color: #f0c75e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-consent-submit {
+  justify-self: end;
+  padding: 9px 13px;
+  color: #21140b;
+  background: #d4af37;
+  border: 0;
+  border-radius: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-consent-submit:disabled,
+.chat-consent-option input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .send-btn {
   background: #D4AF37;
   border: none;

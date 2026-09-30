@@ -28,12 +28,15 @@ QUESTIONS = {
     "telefono": "Un numero di telefono? Lo usiamo per gestire la tua prenotazione.",
     "email": "Una email di riferimento per la prenotazione?",
     "note": "Hai richieste particolari (seggiolone, allergie)? Scrivi 'no' se non ne hai.",
+    "consensi": "Prima del riepilogo puoi scegliere l'opzione privacy facoltativa.",
     "conferma": "Confermi il riepilogo? (sì/no)",
-    "correggi": "Cosa vuoi cambiare? Persone, giorno, ora, nome, telefono, email o note? Oppure scrivi 'annulla'.",
+    "correggi": "Cosa vuoi cambiare? Persone, giorno, ora, nome, telefono, email, note o consensi? Oppure scrivi 'annulla'.",
 }
 FIELDS = {"persone": "persone", "persona": "persone", "giorno": "data", "data": "data",
           "ora": "ora", "orario": "ora", "nome": "nome", "telefono": "telefono",
-          "numero": "telefono", "email": "email", "mail": "email", "note": "note"}
+          "numero": "telefono", "email": "email", "mail": "email", "note": "note",
+          "consenso": "consensi", "consensi": "consensi", "ricordami": "consensi"}
+PRIVACY_NOTICE = "Usiamo nome e telefono solo per gestire la prenotazione. Informativa: /privacy"
 
 
 def normalize(text):
@@ -102,9 +105,10 @@ def _reply(text, state=None):
 
 def _summary(state):
     day = date.fromisoformat(state["data"]).strftime("%d/%m/%Y")
+    consent = "sì" if state.get("consenso_ricordami", False) else "no"
     return (f"Riepilogo: {state['persone']} persone, {day} alle {state['ora']}, "
             f"a nome {state['nome']}.\nTelefono: {state['telefono']}\nEmail: {state['email']}\n"
-            f"Note: {state.get('note') or 'nessuna'}.\n"
+            f"Note: {state.get('note') or 'nessuna'}.\nRicordare nome e telefono per 12 mesi: {consent}.\n"
             "Confermi? (sì/no). Puoi anche scrivere 'cambia' seguito dal campo da correggere.")
 
 
@@ -119,7 +123,7 @@ def _unavailable(result):
     return text
 
 
-REQUIRED = ("persone", "data", "ora", "nome", "telefono", "email", "note")
+REQUIRED = ("persone", "data", "ora", "nome", "telefono", "email", "note", "consensi")
 
 
 def _advance(state, next_step=None):
@@ -140,7 +144,12 @@ def _advance(state, next_step=None):
         next_step = "cognome"
     state.pop("ritorno", None)
     state["step"] = next_step
-    return _reply(_summary(state) if next_step == "conferma" else QUESTIONS[next_step], state)
+    prompt = _summary(state) if next_step == "conferma" else QUESTIONS[next_step]
+    personal_data_steps = ("nome", "cognome", "telefono", "email", "note", "consensi")
+    if next_step in personal_data_steps and not state.get("privacy_notice_shown"):
+        state["privacy_notice_shown"] = True
+        prompt = PRIVACY_NOTICE + "\n\n" + prompt
+    return _reply(prompt, state)
 
 
 def _prefill(state, message):
@@ -205,7 +214,7 @@ def _is_information(text):
                           "qual e il vostro telefono?", "qual e la vostra email?")
 
 
-def _handle(state, message, info_fn):
+def _handle(state, message, info_fn, consenso_ricordami=False):
     text = understand(message)
     simple = text.strip(" .!?;:")
     step = state["step"]
@@ -214,7 +223,7 @@ def _handle(state, message, info_fn):
 
     # Corrections are explicit; never interpret 'sì, ma...' as permission to save.
     if step == "correggi" or (has(text, ("cambia", "correggi", "modifica")) and step != "note"):
-        complete = all(key in state for key in ("persone", "data", "ora", "nome", "telefono", "email", "note"))
+        complete = all(key in state for key in REQUIRED)
         if not complete:
             # Before the summary, only go back to a previously entered field.
             field = next((field for word, field in FIELDS.items() if has(text, (word,))), None)
@@ -314,6 +323,11 @@ def _handle(state, message, info_fn):
         if len(message.strip()) > 200:
             return _reply("Puoi riassumere le richieste in massimo 200 caratteri?", state)
         state["note"] = "" if simple in ("no", "niente", "nessuna", "nessuno", "nessuna nota") else message.strip()
+        return _advance(state, "consensi")
+
+    if step == "consensi":
+        state["consenso_ricordami"] = bool(consenso_ricordami)
+        state["consensi"] = True
         return _advance(state, "conferma")
 
     if step == "conferma":
@@ -322,6 +336,7 @@ def _handle(state, message, info_fn):
                 name=state["nome"], email=state["email"], phone=state["telefono"],
                 date=state["data"], time=state["ora"], party_size=state["persone"],
                 notes=state.get("note", ""), request_started_at=state["started_at"],
+                consenso_ricordami=state.get("consenso_ricordami", False),
             )
             if result["ok"]:
                 day = date.fromisoformat(result["date"]).strftime("%d/%m/%Y")
@@ -341,7 +356,7 @@ def _handle(state, message, info_fn):
     return _reply("Ricominciamo: scrivi 'prenota' quando vuoi.")
 
 
-def answer_booking(message, session_token, info_fn):
+def answer_booking(message, session_token, info_fn, consenso_ricordami=False):
     """None lascia la risposta alle FAQ. La cronologia del browser non autorizza scritture."""
     text = understand(message)
     wants_booking = intent(text) == "booking"
@@ -362,7 +377,12 @@ def answer_booking(message, session_token, info_fn):
             except BadSignature:
                 return _reply("La conversazione è scaduta o non è valida. Scrivi 'prenota' per ricominciare; "
                               "se avevi già confermato, contatta il locale prima di riprenotare.")
-            return _handle(state, message, info_fn)
+            return _handle(
+                state,
+                message,
+                info_fn,
+                consenso_ricordami=consenso_ricordami,
+            )
 
         state = {"mode": "booking" if wants_booking else "availability", "step": "persone", "started_at": time.time()}
         error = _prefill(state, message)
