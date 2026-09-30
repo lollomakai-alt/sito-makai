@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import asyncio
 import logging
@@ -12,7 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+API_DIR = Path(__file__).resolve().parent
+if str(API_DIR) not in sys.path:
+    sys.path.insert(0, str(API_DIR))
+
+load_dotenv(API_DIR.parent / ".env")
 
 import bookings
 from bookings.calendar_summary import month_summary
