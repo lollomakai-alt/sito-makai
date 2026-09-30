@@ -94,28 +94,42 @@ function createQuickQuestions(previousQuestions = []) {
   });
 }
 
-const phonePattern = /(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140)/g;
+const botLinkPattern = /(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140|Informativa|\/privacy)/g;
 const singlePhonePattern = /^(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140)$/;
 
 function renderMessage(text, sender) {
   if (sender !== "bot") return text;
-  return text.split(phonePattern).map((part, index) => {
-    if (!part || !singlePhonePattern.test(part)) return part;
-    const phone = part.replace(/\s/g, "");
-    return <a key={`${part}-${index}`} href={`tel:${phone}`} className="chat-phone-link">{part}</a>;
+  const isPrivacyMessage = text.includes("/privacy");
+  return text.split(botLinkPattern).map((part, index) => {
+    if (!part) return part;
+    if (singlePhonePattern.test(part)) {
+      const phone = part.replace(/\s/g, "");
+      return <a key={`${part}-${index}`} href={`tel:${phone}`} className="chat-phone-link">{part}</a>;
+    }
+    if (isPrivacyMessage && (part === "Informativa" || part === "/privacy")) {
+      return (
+        <a key={`${part}-${index}`} className="chat-link" href="/privacy" target="_blank" rel="noopener noreferrer">
+          {part}
+        </a>
+      );
+    }
+    return part;
   });
 }
 
-export default function ChatWidget({ isOpen, onOpen, onClose }) {
+export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClose }) {
   const [messages, setMessages] = useState(() => [createInitialMessage()]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showBookingConsents, setShowBookingConsents] = useState(false);
+  const [consensoRicordami, setConsensoRicordami] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(thinkingMessages[0]);
   const [quickQuestions, setQuickQuestions] = useState(() => createQuickQuestions());
   const messagesEndRef = useRef(null);
   const sessionTokenRef = useRef(null);
   const sendingRef = useRef(false);
   const wasOpenRef = useRef(isOpen);
+  const bookingStartHandledRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
@@ -125,16 +139,35 @@ export default function ChatWidget({ isOpen, onOpen, onClose }) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) {
+      bookingStartHandledRef.current = false;
+      return;
+    }
+    if (!startBooking || bookingStartHandledRef.current || sendingRef.current) return;
+
+    bookingStartHandledRef.current = true;
+    sessionTokenRef.current = null;
+    setShowBookingConsents(false);
+    sendMessage("Vorrei prenotare un tavolo.", { showUserMessage: false });
+  }, [isOpen, startBooking, isLoading]);
+
+  useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [isOpen, messages, isLoading]);
 
-  async function sendMessage(text) {
+  async function sendMessage(text, options = {}) {
+    const {
+      consensoRicordami = false,
+      showUserMessage = true,
+    } = options;
     const cleanText = text.trim();
     if (!cleanText || sendingRef.current) return;
     sendingRef.current = true;
 
-    const userMessage = { id: crypto.randomUUID(), sender: "user", text: cleanText };
-    setMessages((current) => [...current, userMessage]);
+    if (showUserMessage) {
+      const userMessage = { id: crypto.randomUUID(), sender: "user", text: cleanText };
+      setMessages((current) => [...current, userMessage]);
+    }
     setInput("");
     setLoadingMessage(randomMessage(thinkingMessages));
     setIsLoading(true);
@@ -146,6 +179,7 @@ export default function ChatWidget({ isOpen, onOpen, onClose }) {
         body: JSON.stringify({
           message: cleanText,
           session_token: sessionTokenRef.current,
+          consenso_ricordami: consensoRicordami,
         }),
       });
 
@@ -153,6 +187,10 @@ export default function ChatWidget({ isOpen, onOpen, onClose }) {
       const data = await response.json();
       if (typeof data.reply !== "string") throw new Error("Risposta chat non valida");
       sessionTokenRef.current = data.session_token ?? null;
+      setShowBookingConsents(Boolean(data.show_booking_consents));
+      if (data.show_booking_consents) {
+        setConsensoRicordami(false);
+      }
 
       setMessages((current) => [
         ...current,
@@ -195,6 +233,14 @@ export default function ChatWidget({ isOpen, onOpen, onClose }) {
     }));
   }
 
+  function handleConsentSubmit(event) {
+    event.preventDefault();
+    sendMessage("continua", {
+      consensoRicordami,
+      showUserMessage: false,
+    });
+  }
+
   return (
     <>
       <button
@@ -228,25 +274,49 @@ export default function ChatWidget({ isOpen, onOpen, onClose }) {
             {isLoading && <div className="message bot chat-loading">{loadingMessage}</div>}
             <div ref={messagesEndRef} />
           </div>
-          <div className="chat-quick-questions">
-            {quickQuestions.map((question) => (
-              <button key={question.groupId} type="button" onClick={() => handleQuickQuestion(question)} disabled={isLoading}>
-                {question.text}
+          {showBookingConsents ? (
+            <form className="chat-consent-form" onSubmit={handleConsentSubmit}>
+              <label className="chat-consent-option">
+                <input
+                  type="checkbox"
+                  checked={consensoRicordami}
+                  onChange={(event) => setConsensoRicordami(event.target.checked)}
+                  disabled={isLoading}
+                />
+                <span>Conserva i miei dati per 1 anno (invece di 30 giorni)</span>
+              </label>
+              <p className="chat-consent-privacy">
+                <a className="chat-link" href="/privacy" target="_blank" rel="noopener noreferrer">
+                  /privacy
+                </a>
+              </p>
+              <button className="chat-consent-submit" type="submit" disabled={isLoading}>
+                Continua al riepilogo
               </button>
-            ))}
-          </div>
-          <form className="chat-input-area" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Chiedi al capitano..."
-              maxLength="500"
-              disabled={isLoading}
-              aria-label="Scrivi un messaggio"
-            />
-            <button className="send-btn" type="submit" disabled={isLoading || !input.trim()} aria-label="Invia messaggio">➤</button>
-          </form>
+            </form>
+          ) : (
+            <>
+              <div className="chat-quick-questions">
+                {quickQuestions.map((question) => (
+                  <button key={question.groupId} type="button" onClick={() => handleQuickQuestion(question)} disabled={isLoading}>
+                    {question.text}
+                  </button>
+                ))}
+              </div>
+              <form className="chat-input-area" onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder="Chiedi al capitano..."
+                  maxLength="500"
+                  disabled={isLoading}
+                  aria-label="Scrivi un messaggio"
+                />
+                <button className="send-btn" type="submit" disabled={isLoading || !input.trim()} aria-label="Invia messaggio">➤</button>
+              </form>
+            </>
+          )}
         </div>
       )}
     </>
