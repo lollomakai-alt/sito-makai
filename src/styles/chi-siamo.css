@@ -31,34 +31,15 @@
 
 /* TITOLO */
 .about-title {
+  /* usa .section-title da common.css; qui solo margini specifici */
   margin: 0 0 clamp(24px, 4vw, 48px);
-  font-family: 'Pirata One', Georgia, serif;
-  font-weight: 400;
-  font-size: clamp(2.5rem, 6vw, 4.4rem);
-  line-height: 1.1;
-  letter-spacing: clamp(2px, 0.5vw, 6px);
-  text-transform: uppercase;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
 }
 
 /* PARAGRAFO */
 .about-subtitle {
+  /* usa .section-subtitle da common.css; qui solo layout specifico */
   max-width: 900px;
   margin: clamp(24px, 4vw, 48px) auto 0;
-  font-family: Georgia, serif;
-  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
-  font-weight: 700;
-  line-height: 1.55;
-  letter-spacing: 0.5px;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  color: #fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.75);
 }
 
 .about-photos {
@@ -84,30 +65,23 @@
   box-shadow: 0 12px 32px rgba(0,0,0,0.45);
 }
 
-.about-more-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  margin: 0 auto;
-  padding: 0 22px;
-  color: #10100d;
-  background: #d4af37;
-  border: 1px solid #080806;
-  border-radius: 4px;
-  font-family:  Georgia, serif;
-  font-size: 1.25rem;
+/* PANEL LINK - sostituisce il vecchio bottone "Scopri di più" */
+.about-panel-link {
+  display: block;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  color: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.about-more-link:hover {
-  background: #f0cf63;
-  transform: translateY(-2px);
+.about-panel-link:hover,
+.about-panel-link:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.6),
+              0 0 32px rgba(212, 175, 55, 0.35),
+              0 20px 48px rgba(0, 0, 0, 0.55);
 }
 
-.about-more-link:focus-visible {
+.about-panel-link:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 4px;
 }
@@ -192,21 +166,6 @@
   box-shadow: 0 14px 34px rgba(0,0,0,0.55);
 }
 
-.about-subtitle {
-  width: 100%;
-  max-width: 850px;
-  margin: 0 auto;
-  font-size: clamp(1.1rem, 0.7rem + 2vw, 2.2rem);
-  font-weight: 400;
-  color: whitesmoke;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  line-height: 1.6;
-  letter-spacing: clamp(1px, 0.25vw, 3px);
-  -webkit-text-stroke: 1px #000;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
-}
-
 .about-description {
   margin: clamp(14px, 2vw, 22px) auto 0;
   font-size: clamp(1.2rem, 2.6vw, 2rem);
@@ -226,12 +185,7 @@
 
 @media (max-width: 600px) {
   .about-panel .about-subtitle {
-    font-size: 1rem;
-    line-height: 1.65;
-    letter-spacing: 0.5px;
-    text-wrap: pretty;
-    -webkit-text-stroke: 0;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
+    /* override per mobile: usa dimensioni standard da common.css */
   }
 
   .about-detail-header { padding: 14px 16px; }
@@ -245,5 +199,3 @@
   .about-detail-header .logo-full { height: 36px; }
   .about-detail-back { padding: 7px 9px; font-size: 0.72rem; }
 }
-
-/* Pulizia: rimossa definizione duplicata .about-subtitle con text-stroke */

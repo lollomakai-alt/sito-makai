@@ -1,19 +1,22 @@
+import { siteCopy } from "../i18n/copy";
+import { useLanguage } from "../i18n/LanguageContext";
+
 export default function HomeMenuSection() {
+  const { language } = useLanguage();
+  const copy = siteCopy[language].homeMenu;
+
   return (
     <section id="menu" className="menu-section content-section" aria-labelledby="menu-title">
-      <h2 id="menu-title" className="menu-title">Menu</h2>
+      <h2 id="menu-title" className="menu-title">{copy.title}</h2>
       <div className="menu-panels">
         <a className="menu-panel" href="/menu-drink">
           <div className="menu-panel-copy">
-            <h3>Cocktail Tiki</h3>
-            <p>
-              Rum, frutta tropicale e spezie: i nostri cocktail Tiki vi
-              accompagnano in un viaggio tra sapori esotici e spirito d’avventura.
-            </p>
+            <h3>{copy.drinkTitle}</h3>
+            <p>{copy.drinkText}</p>
           </div>
           <img
             src={`${import.meta.env.BASE_URL}images/drinktop.webp`}
-            alt="Cocktail Tiki del Makai"
+            alt={copy.drinkAlt}
             width="1179"
             height="1592"
             loading="lazy"
@@ -23,16 +26,12 @@ export default function HomeMenuSection() {
 
         <a className="menu-panel" href="/menu-food">
           <div className="menu-panel-copy">
-            <h3>One Piece Food</h3>
-            <p>
-              Salpate sulla Grand Line con un menù ispirato a One Piece: dai
-              piatti amati da Luffy alle ricette di Sanji, ogni boccone è
-              un’avventura da condividere con la vostra ciurma.
-            </p>
+            <h3>{copy.foodTitle}</h3>
+            <p>{copy.foodText}</p>
           </div>
           <img
             src={`${import.meta.env.BASE_URL}images/menutop.webp`}
-            alt="Piatti del menu Makai ispirato a One Piece"
+            alt={copy.foodAlt}
             width="1179"
             height="1561"
             loading="lazy"

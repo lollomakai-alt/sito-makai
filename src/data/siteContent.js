@@ -91,6 +91,54 @@ export const menuPages = {
   },
 };
 
+const menuPagesEn = {
+  "/menu-drink": {
+    type: "cocktail",
+    title: "Drinks Menu",
+    panelTitle: "Tiki Cocktails",
+    description:
+      "Rum, tropical fruit and spices: our Tiki cocktails take you on a journey through exotic flavours and a spirit of adventure.",
+    image: "images/drinktop.webp",
+    imageAlt: "Makai Tiki cocktail",
+    categories: [
+      {
+        id: "cocktails",
+        title: "Cocktails",
+        menuKey: "cocktails",
+        images: [
+          { src: "images/drink.webp", alt: "Selection of Tiki cocktails" },
+          { src: "images/drink2.webp", alt: "Tropical cocktails" },
+          { src: "images/Drink 11.webp", alt: "Exotic drinks" },
+          { src: "images/Drink10.webp", alt: "Makai cocktails" },
+        ],
+        items: [],
+      },
+      { id: "analcolici", title: "Non-Alcoholic", menuKey: "analcolici", image: "images/Drink10.webp", imageAlt: "Makai tropical drink", items: [] },
+      { id: "volcanoes", title: "Volcanoes", menuKey: "volcanoes", image: "images/Tiki mug .webp", imageAlt: "Makai Tiki mug with decorative flames", items: [] },
+    ],
+  },
+  "/menu-food": {
+    type: "food",
+    title: "Food Menu",
+    panelTitle: "One Piece Food",
+    description:
+      "A menu that openly pays tribute to the One Piece universe: dishes for those who love to eat like Luffy, prepared with Sanji's care in the kitchen. From street food inspired by the islands of the Grand Line to more elaborate creations, every dish carries the name and spirit of a character or adventure from the series. Fresh ingredients, careful presentation and a touch of pirate madness make every course a small Easter egg for fans and a delicious discovery for newcomers.",
+    image: "images/menutop.webp",
+    imageAlt: "Makai dishes inspired by One Piece",
+    categories: [
+      { id: "snack", title: "Snacks", menuKey: "snack", image: "images/foto-menu2.webp", imageAlt: "Makai menu snacks", items: [] },
+      { id: "sushi", title: "Sushi", menuKey: "sushi", image: "images/foto-menu1.webp", imageAlt: "Makai sushi", items: [] },
+      { id: "primi", title: "First Courses", menuKey: "primi_starters", image: "images/Udon di oden .webp", imageAlt: "Oden Udon from the Makai menu", items: [] },
+      { id: "secondi", title: "Main Courses", menuKey: "secondi_main", image: "images/MENU56.webp", imageAlt: "Main course from the Makai menu", items: [] },
+      { id: "dolci", title: "Desserts", menuKey: "dolci", image: "images/dolci.webp", imageAlt: "Dessert from the Makai menu", items: [] },
+    ],
+  },
+};
+
+export function getMenuPage(path, language = "it") {
+  return (language === "en" ? menuPagesEn : menuPages)[path];
+}
+
 export const galleryImages = [
   { src: "images/Chi siamo 2 .webp", alt: "Dettaglio della sezione Chi siamo" },
   { src: "images/Drink 11.webp", alt: "Cocktail del Makai" },

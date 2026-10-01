@@ -1,0 +1,105 @@
+/* ============================================================
+   COMMON TYPOGRAPHY & PANEL STYLES
+   Shared across all sections — single source of truth
+   ============================================================ */
+
+/* ---------- SECTION TITLE (h1 / h2 principale) ---------- */
+.section-title {
+  margin: 0 0 clamp(24px, 4vw, 48px);
+  font-family: 'Pirata One', Georgia, serif;
+  font-size: clamp(2.5rem, 6vw, 4.4rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: clamp(2px, 0.5vw, 6px);
+  text-transform: uppercase;
+  color: #B08D2F;
+  -webkit-text-stroke: 1.5px #000;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
+    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
+}
+
+/* ---------- SUBTITLE / BODY PARAGRAPH ---------- */
+.section-subtitle {
+  max-width: 900px;
+  margin: clamp(16px, 3vw, 32px) auto 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.5px;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.75);
+}
+
+/* ---------- HERO-SPECIFIC SUBTITLE (slightly larger) ---------- */
+.hero-subtitle {
+  max-width: 900px;
+  margin: clamp(24px, 4vw, 48px) auto 0;
+  font-family: Georgia, serif;
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: clamp(0.5px, 0.15vw, 2px);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  color: #fff;
+}
+
+/* ---------- PANEL BASE (bg, border, radius, shadow) ---------- */
+.panel {
+  background: rgba(8, 15, 22, 0.78);
+  border: 1px solid rgba(176, 141, 47, 0.55);
+  border-radius: clamp(14px, 2vw, 24px);
+  box-shadow: 0 16px 38px rgba(0,0,0,0.5);
+}
+
+.panel--light {
+  background: rgba(8, 15, 22, 0.72);
+}
+
+/* ---------- SECTION LAYOUT WRAPPER ---------- */
+.content-section {
+  position: relative;
+}
+
+.content-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.35) 0%,
+    rgba(0,0,0,0.55) 50%,
+    rgba(0,0,0,0.35) 100%
+  );
+}
+
+.content-section > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ---------- HERO TITLE (keeps Pirata One + gold + stroke) ---------- */
+.hero-title {
+  font-family: 'Pirata One', Georgia, serif;
+  font-size: clamp(2rem, 1rem + 4.5vw, 4.4rem);
+  max-width: 100%;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  font-weight: 400;
+  color: #B08D2F;
+  -webkit-text-stroke: 1.5px #000;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: clamp(3px, 0.6vw, 9px);
+}

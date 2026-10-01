@@ -50,7 +50,7 @@ def people_count(text, bare=False):
 
 def intent(text):
     text = understand(text)
-    if re.search(r'\b(compleann\w*|fest[ae]|laure\w*|event\w*|aziendale|gruppo|pacchett\w*|buffet|apericena|aperitivo|dopo cena|preventivo)\b', text):
+    if re.search(r'\b(compleann\w*|fest[ae]|laure\w*|event\w*|aziendale|gruppo|pacchett\w*|buffet|apericena|aperitivo|dopo\s*cena|preventivo)\b', text):
         return 'event'
     if re.search(r'\b(prenot\w*|riserv\w*)\b', text):
         return 'booking'

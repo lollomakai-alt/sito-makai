@@ -5,12 +5,14 @@ from database import init_db
 from .dates import now_local
 from .validators import normalize_email, normalize_phone
 from .service import (
-    check_availability, create_booking, find_bookings, modify_booking,
-    cancel_booking, list_day, admin_cancel,
+    check_availability, create_admin_booking, create_booking, find_bookings, modify_booking,
+    cancel_booking, list_day, admin_cancel, mark_arrived, register_marketing_consent,
+    revoke_marketing_consent,
 )
 
 __all__ = [
     "DATABASE_URL", "init_db", "now_local", "normalize_email", "normalize_phone",
-    "check_availability", "create_booking", "find_bookings", "modify_booking",
-    "cancel_booking", "list_day", "admin_cancel",
+    "check_availability", "create_admin_booking", "create_booking", "find_bookings", "modify_booking",
+    "cancel_booking", "list_day", "admin_cancel", "mark_arrived", "register_marketing_consent",
+    "revoke_marketing_consent",
 ]

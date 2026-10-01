@@ -1,3 +1,5 @@
+@import './common.css';
+
 @font-face {
   font-family: 'Pirata One';
   src: url('../assets/fonts/pirata-one.ttf') format('truetype');
@@ -121,8 +123,24 @@ html, body {
 }
 
 .nav-item:hover { color: white; }
-.lang-control { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
-.lang.active { color: white; font-weight: bold; }
+.lang-control { display: flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.lang {
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.lang.active { color: #f2c66d; font-weight: bold; }
+.lang:focus-visible { outline: 2px solid #f2c66d; outline-offset: 2px; }
+.detail-header-actions { display: flex; align-items: center; gap: 10px; }
+.detail-language {
+  padding: 7px 9px;
+  border: 1px solid rgba(176, 141, 47, 0.7);
+  border-radius: 999px;
+  background: rgba(8, 15, 22, 0.78);
+}
 
 /* STRUTTURA COMUNE */
 .main-content {
@@ -209,6 +227,15 @@ html, body {
 
   .lang-control {
     margin-left: 10px;
+  }
+
+  .detail-header-actions {
+    gap: 6px;
+  }
+
+  .detail-language {
+    margin-left: 0;
+    padding: 5px 7px;
   }
 }
 

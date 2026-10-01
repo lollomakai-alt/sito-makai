@@ -1,22 +1,26 @@
+import { siteCopy } from "../i18n/copy";
+import { useLanguage } from "../i18n/LanguageContext";
+
 export default function AboutSection() {
+  const { language } = useLanguage();
+  const copy = siteCopy[language].about;
+  const [lead, body] = copy.text.split("\n");
+
   return (
     <section id="chi-siamo" className="about-section content-section" aria-labelledby="about-title">
-      <h2 id="about-title" className="about-title">Chi siamo</h2>
-      <div className="about-panel">
-        <div className="about-subtitle-container">
-          <p className="about-subtitle">La nostra rotta, il vostro approdo
+      <h2 id="about-title" className="section-title">{copy.title}</h2>
+      <a href="/chi-siamo" className="about-panel-link" aria-label={`${copy.more} — ${copy.title}`}>
+        <div className="about-panel panel">
+          <p className="section-subtitle">{lead}
             <br />
-            Makai nasce dall’incontro tra l’anima Tiki e lo spirito dell’avventura.
-            Un luogo dove cocktail, sapori esotici e atmosfere piratesche vi
-            invitano a lasciare la quotidianità a terra.
-            Salite a bordo: il viaggio comincia qui.
+            {body}
           </p>
         </div>
-      </div>
+      </a>
       <div className="about-photos">
         <img
           src={`${import.meta.env.BASE_URL}images/chi-siamo.webp`}
-          alt="Foto della sezione Chi siamo"
+          alt={copy.imageOne}
           width="816"
           height="980"
           loading="lazy"
@@ -24,16 +28,13 @@ export default function AboutSection() {
         />
         <img
           src={`${import.meta.env.BASE_URL}images/statua.webp`}
-          alt="Statua del Makai"
+          alt={copy.imageTwo}
           width="896"
           height="1195"
           loading="lazy"
           decoding="async"
         />
       </div>
-      <a className="about-more-link" href="/chi-siamo">
-        Scopri di più <span aria-hidden="true">→</span>
-      </a>
     </section>
   );
 }

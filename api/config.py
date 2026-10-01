@@ -12,8 +12,15 @@ TZ = ZoneInfo("Europe/Rome")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # ===================== REGOLE DEL LOCALE (DA MODIFICARE) =====================
-SLOT_START = "18:00"        # primo orario prenotabile
-SLOT_END = "23:00"          # ultimo orario prenotabile
+DINNER_BOOKING_START = "18:00"
+DINNER_BOOKING_END = "23:00"
+AFTER_DINNER_RESERVATION_START = "22:30"
+AFTER_DINNER_RESERVATION_END = "00:00"
+VENUE_CLOSE_TIME = "02:00"
+
+# Alias mantenuti per compatibilità con il flusso esistente delle cene.
+SLOT_START = DINNER_BOOKING_START
+SLOT_END = DINNER_BOOKING_END
 SLOT_MINUTES = 30           # intervallo delle alternative proposte
 MAX_PARTY_SIZE = 6          # oltre questo numero è meglio chiamare il locale
 STAY_MINUTES = 120          # durata stimata di una prenotazione

@@ -8,12 +8,21 @@ from config import (
 )
 from .dates import now_local, _parse
 
+
+_EMAIL_PATTERN = re.compile(
+    r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
+    r"(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@"
+    r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"[a-z]{2,63}"
+)
+
+
 def normalize_email(raw: str):
-    """Compatta gli spazi e restituisce l'email in minuscolo, oppure None."""
-    e = re.sub(r"\s+", "", raw or "").lower()
-    if len(e) > 120 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}", e):
+    """Accetta spazi e maiuscole, poi restituisce un indirizzo valido in minuscolo."""
+    email = re.sub(r"\s+", "", raw or "").lower()
+    if not email or len(email) > 120 or not _EMAIL_PATTERN.fullmatch(email):
         return None
-    return e
+    return email
 
 
 

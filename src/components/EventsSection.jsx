@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { eventImages } from "virtual:event-images";
+import { siteCopy } from "../i18n/copy";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function EventsSection() {
+  const { language } = useLanguage();
+  const copy = siteCopy[language].events;
   const galleryRef = useRef(null);
   const [isGalleryPaused, setIsGalleryPaused] = useState(false);
 
@@ -41,18 +45,10 @@ export default function EventsSection() {
 
   return (
     <section id="eventi" className="events-section content-section" aria-labelledby="events-title">
-      <h2 id="events-title" className="events-title">Eventi</h2>
+      <h2 id="events-title" className="events-title">{copy.title}</h2>
       <div className="events-layout">
         <div className="events-copy">
-          <p>
-            La vostra festa merita una rotta speciale. Radunate la ciurma e
-            salpate verso Makai: tra cocktail Tiki, sapori ispirati alla Grand
-            Line e atmosfere piratesche, sarete i protagonisti dell’avventura.
-            Che sia un compleanno, una laurea o un traguardo da celebrare,
-            lasciate la quotidianità a terra e immergetevi in un’esperienza da
-            vivere con chi conta davvero. Al prossimo brindisi, il tesoro saranno
-            i ricordi che porterete a casa.
-          </p>
+          <p>{copy.text}</p>
         </div>
 
         <div
@@ -69,13 +65,13 @@ export default function EventsSection() {
           <div
             ref={galleryRef}
             className="events-gallery"
-            aria-label="Galleria fotografica della sala eventi"
+            aria-label={copy.galleryLabel}
           >
             {eventImages.map((image) => (
               <a className="events-gallery-slide" href="/galleria" key={image.src}>
                 <img
                   src={`${import.meta.env.BASE_URL}${image.src}`}
-                  alt={image.alt}
+                  alt={language === "en" ? "Makai event space" : image.alt}
                   loading="lazy"
                   decoding="async"
                 />
@@ -83,14 +79,14 @@ export default function EventsSection() {
             ))}
           </div>
           <div className="events-gallery-controls">
-            <button type="button" aria-label="Foto precedente" onClick={() => scrollGallery(-1)}>
+            <button type="button" aria-label={copy.previous} onClick={() => scrollGallery(-1)}>
               ←
             </button>
-            <button type="button" aria-label="Foto successiva" onClick={() => scrollGallery(1)}>
+            <button type="button" aria-label={copy.next} onClick={() => scrollGallery(1)}>
               →
             </button>
             <a className="events-gallery-open" href="/galleria">
-              Apri la galleria completa
+              {copy.openGallery}
             </a>
           </div>
         </div>

@@ -12,7 +12,7 @@ os.environ.setdefault("CHAT_SESSION_SECRET", "test-secret-for-chat-quick-replies
 from automatic_chat import answer_chat  # noqa: E402
 from bookings.dates import now_local  # noqa: E402
 from config import CLOSED_WEEKDAYS  # noqa: E402
-from prenotazioni import _serializer, parse_data  # noqa: E402
+from prenotazioni import PHONE, _serializer, parse_data  # noqa: E402
 
 
 class ChatQuickRepliesTests(unittest.TestCase):
@@ -46,6 +46,19 @@ class ChatQuickRepliesTests(unittest.TestCase):
         packages = answer_chat("Dopocena", categories["session_token"])
         self.assertEqual(
             packages["quick_replies"],
+            ["Drink + torta", "Drink + snack", "Drink + prosecco"],
+        )
+        self.assertIn("dalle 22:30 alle 00:00", packages["reply"])
+        self.assertIn("chiude alle 02:00", packages["reply"])
+        self.assertIn("prenotazioni automatiche solo per la cena", packages["reply"])
+        self.assertIn(PHONE, packages["reply"])
+
+    def test_dopocena_joined_word_never_starts_dinner_booking(self):
+        result = answer_chat("Vorrei prenotare dopocena", None)
+        self.assertIn("prenotazioni automatiche solo per la cena", result["reply"])
+        self.assertIn(PHONE, result["reply"])
+        self.assertEqual(
+            result["quick_replies"],
             ["Drink + torta", "Drink + snack", "Drink + prosecco"],
         )
 

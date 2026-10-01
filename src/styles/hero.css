@@ -112,45 +112,18 @@
 }
 
 .hero-content h1 {
-  font-family: 'Pirata One', Georgia, serif;
-  font-size: clamp(2rem, 1rem + 4.5vw, 4.4rem);
-  max-width: 100%;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  font-weight: 400;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
-  text-transform: uppercase;
-  line-height: 1.1;
+  /* usa .hero-title da common.css; qui solo layout */
   margin: 0;
-  letter-spacing: clamp(3px, 0.6vw, 9px);
 }
 
 .hero-description {
-  font-family: 'Pirata One', Georgia, serif;
-  font-size: 1.65rem;
-  width: 100%;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  font-weight: 400;
-  color: whitesmoke;
-  max-width: 1000px;
-  margin: 0;
-  line-height: 1.45;
-  letter-spacing: clamp(1px, 0.25vw, 3px);
-  -webkit-text-stroke: 1px #000;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
+  /* usa .hero-subtitle da common.css; qui solo layout */
+  margin: clamp(24px, 4vw, 48px) auto 0;
 }
 
 @media (max-width: 768px) {
   .hero-content {
     gap: 14px;
-  }
-
-  .hero-description {
-    font-size: 1.2rem;
-    line-height: 1.35;
   }
 }
 

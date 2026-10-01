@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
+import { siteCopy } from "../i18n/copy";
+import { useLanguage } from "../i18n/LanguageContext";
 
 // Similar-sized, full-proportion prints on a 1400 × 480 canvas.
 const wallPhotos = [
@@ -20,7 +22,7 @@ const wallPhotos = [
   { src: "Drink 11.webp", x: 1212.066, y: 15, w: 177.934, h: 223.964, rotate: 1.0, layer: 1 },
 ];
 
-function PhotoWall() {
+function PhotoWall({ label }) {
   const trackRef = useRef(null);
   const animationRef = useRef(null);
 
@@ -66,7 +68,7 @@ function PhotoWall() {
             key={copy}
             className="hero-wall-composition"
             role={copy === 0 ? "img" : undefined}
-            aria-label={copy === 0 ? "Parete fotografica del Makai: sala, cocktail, dettagli Tiki e serate nel locale" : undefined}
+            aria-label={copy === 0 ? label : undefined}
             aria-hidden={copy === 1 ? true : undefined}
           >
             {wallPhotos.map((photo) => (
@@ -108,6 +110,8 @@ function PhotoWall() {
 }
 
 export default function HeroSection() {
+  const { language } = useLanguage();
+  const copy = siteCopy[language].hero;
   const sectionRef = useRef(null);
 
   useLayoutEffect(() => {
@@ -126,11 +130,11 @@ export default function HeroSection() {
 
   return (
     <section ref={sectionRef} id="hero" className="hero-section" aria-labelledby="hero-title">
-      <PhotoWall />
+      <PhotoWall label={copy.wallLabel} />
       <div className="hero-content">
-        <h1 id="hero-title" className="gold-text">Benvenuti a bordo del Makai</h1>
-        <p className="hero-description">
-          Anima Tiki, spirito d'avventura e sapori esotici in un viaggio fuori dall'ordinario.
+        <h1 id="hero-title" className="hero-title">{copy.title}</h1>
+        <p className="hero-subtitle">
+          {copy.description}
         </p>
       </div>
     </section>

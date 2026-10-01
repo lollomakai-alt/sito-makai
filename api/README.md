@@ -118,7 +118,10 @@ Le frasi non riconosciute portano a una domanda di chiarimento, senza inventare 
 - `chat_events.py`: pacchetti approvati dal locale, capienza e stime. Aperitivo
   €15, Apericena €25, tre pacchetti distinti dopo cena da €15; torta extra €3
   a persona, bottiglia di prosecco €20. Fino a 30 seduti, 31–40 in piedi con
-  buffet, oltre 40 valutazione diretta. Nessun evento viene salvato automaticamente.
+  buffet, oltre 40 valutazione diretta. La chat registra soltanto le cene dalle
+  18:00 alle 23:00. Il dopocena, disponibile dalle 22:30 alle 00:00, si prenota
+  chiamando il locale; la chiusura è alle 02:00. Nessun evento viene salvato
+  automaticamente.
 
 Il token esistente conserva preferenze alimentari, argomento, preventivo e dati
 prenotazione. Una domanda sul menu non sovrascrive nome o telefono. Passare agli

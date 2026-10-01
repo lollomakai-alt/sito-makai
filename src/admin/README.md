@@ -7,11 +7,11 @@ Gli stili, le immagini e le animazioni del sito pubblico non vengono caricati in
 - `AdminApp.jsx`: ingresso e percorsi dell'area amministrativa.
 - `pages/LoginPage.jsx`: login.
 - `pages/CalendarPage.jsx`: mese corrente, navigazione e coperti per giorno.
-- `pages/BookingsPage.jsx`: giornata selezionata e pulsante WhatsApp.
+- `pages/BookingsPage.jsx`: giornata selezionata e conferma via WhatsApp, con fallback email.
 - `components/AdminAccess.jsx`: verifica della sessione.
 - `components/LogoutButton.jsx`: uscita dall’area riservata.
 - `styles/admin.css`: tutti gli stili della gestione interna.
-- `utils/bookingConfirmation.js`: testo e link WhatsApp.
+- `utils/bookingConfirmation.js`: testo e link di conferma `mailto:`/WhatsApp.
 - `utils/calendar.js`: date, griglia lunedì–domenica e navigazione mensile.
 
 Indirizzi: `/admin/login`, `/admin/prenotazioni` (mese corrente),

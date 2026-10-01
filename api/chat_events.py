@@ -1,6 +1,11 @@
 """Pacchetti comunicati dal locale. Solo stime, nessuna scrittura Bookings."""
 import re
 from chat_language import people_count
+from config import (
+    AFTER_DINNER_RESERVATION_END,
+    AFTER_DINNER_RESERVATION_START,
+    VENUE_CLOSE_TIME,
+)
 
 PACKAGES = {
     'aperitivo': (15, '1 drink e snack: platano, patate dolci e nuvole di drago'),
@@ -67,12 +72,22 @@ def _details(package):
         'drink + snack': '• Drink + snack\nUn drink a persona accompagnato dai nostri snack.',
         'drink + prosecco': '• Drink + prosecco\nUna formula pensata per brindare insieme.',
     }
-    return descriptions.get(package, '')
+    details = descriptions.get(package, '')
+    if details:
+        details += (
+            f'\n\nIl dopocena è prenotabile dalle {AFTER_DINNER_RESERVATION_START} '
+            f'alle {AFTER_DINNER_RESERVATION_END}; il locale chiude alle {VENUE_CLOSE_TIME}.'
+        )
+    return details
 
 
-def _after_dinner_choices():
+def _after_dinner_choices(phone):
     return (
-        'Per il dopocena abbiamo diverse formule da €15 a persona.\n\n'
+        f'Il dopocena è prenotabile dalle {AFTER_DINNER_RESERVATION_START} '
+        f'alle {AFTER_DINNER_RESERVATION_END}; il locale chiude alle {VENUE_CLOSE_TIME}. '
+        f'La chat accetta prenotazioni automatiche solo per la cena: per prenotare il dopocena '
+        f'chiama il locale al {phone}.\n\n'
+        'Abbiamo diverse formule da €15 a persona.\n\n'
         'Potete scegliere tra:\n\n'
         '• Drink + torta\nUn drink a persona con Cheesecake al Frutto del Diavolo oppure Tiki Misù.\n\n'
         '• Drink + snack\nUn drink a persona accompagnato dai nostri snack.\n\n'
@@ -120,10 +135,16 @@ def answer_event(text, context, phone):
     count = event.get('people')
     if not selected:
         if event.get('category') == 'dopo cena':
-            return _after_dinner_choices()
+            return _after_dinner_choices(phone)
         return EVENT_CHOICE
     if not count:
-        return _details(selected) + '\n\nQuante persone sareste?'
+        reply = _details(selected)
+        if event.get('category') == 'dopo cena':
+            reply += (
+                f'\n\nPosso preparare una stima indicativa, ma per prenotare il dopocena '
+                f'devi chiamare il locale al {phone}.'
+            )
+        return reply + '\n\nQuante persone sareste?'
     if count > 40:
         return (f'Per {count} persone la richiesta va valutata direttamente con il locale al {phone}. '
                 'Non registro automaticamente gli eventi; formula, preventivo e conferma vanno concordati in struttura.')

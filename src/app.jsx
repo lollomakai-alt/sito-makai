@@ -19,20 +19,22 @@ import EventsSection from "./components/EventsSection";
 import HeroSection from "./components/HeroSection";
 import HomeMenuSection from "./components/HomeMenuSection";
 import SiteNav from "./components/SiteNav";
-import { menuPages } from "./data/siteContent";
+import { getMenuPage } from "./data/siteContent";
+import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 import AboutPage from "./pages/AboutPage";
 import GalleryPage from "./pages/GalleryPage";
 import MenuDetailPage from "./pages/MenuDetailPage";
 import Privacy from "./pages/Privacy";
 
-function App() {
+function AppContent() {
   const containerRef = useRef(null);
-  const [activeSection] = useState("Chi siamo");
+  const { language } = useLanguage();
+  const [activeSection] = useState("about");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [startBooking, setStartBooking] = useState(false);
 
   const currentPath = window.location.pathname.replace(/\/$/, "") || "/";
-  const menuPage = menuPages[currentPath];
+  const menuPage = getMenuPage(currentPath, language);
   const isGalleryPage = currentPath === "/galleria";
   const isAboutPage = currentPath === "/chi-siamo";
   const isPrivacyPage = currentPath === "/privacy";
@@ -87,4 +89,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}

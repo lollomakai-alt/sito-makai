@@ -24,6 +24,7 @@ from bookings.calendar_summary import month_summary
 from admin_auth import router as auth_router, require_admin, require_browser_action
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
+from config import MAX_PARTY_SIZE
 from menu_data import get_menu_data
 
 logging.basicConfig(level=logging.INFO)
@@ -124,6 +125,21 @@ class ChatMessage(BaseModel):
     consenso_ricordami: bool = False
 
 
+class AdminBookingBody(BaseModel):
+    name: str = Field(min_length=2, max_length=60)
+    phone: str = Field(min_length=8, max_length=30)
+    email: str = Field(default="", max_length=120)
+    date: str = Field(min_length=10, max_length=10)
+    time: str = Field(min_length=5, max_length=5)
+    party_size: int = Field(ge=1, le=MAX_PARTY_SIZE)
+    notes: str = Field(default="", max_length=300)
+
+
+class MarketingConsentBody(BaseModel):
+    channel: Literal["whatsapp", "telefono", "email"]
+    response_text: str = Field(min_length=1, max_length=200)
+
+
 @app.get("/", include_in_schema=False)
 @app.get("/api/health")
 async def health_check():
@@ -174,6 +190,28 @@ def admin_list(request: Request, response: Response, date: Optional[str] = None)
     return {"date": day, "bookings": rows}
 
 
+@app.post("/api/admin/bookings")
+def admin_create(body: AdminBookingBody, request: Request):
+    require_browser_action(request)
+    require_admin(request)
+    try:
+        result = bookings.create_admin_booking(
+            name=body.name,
+            phone=body.phone,
+            email=body.email,
+            date=body.date,
+            time=body.time,
+            party_size=body.party_size,
+            notes=body.notes,
+        )
+    except Exception:
+        logger.warning("Creazione manuale della prenotazione non disponibile.")
+        raise HTTPException(status_code=503, detail="Prenotazione non salvata: controlla il database.") from None
+    if not result.get("ok"):
+        raise HTTPException(status_code=422, detail=result.get("error", "Prenotazione non valida."))
+    return result
+
+
 @app.get("/api/admin/bookings/month")
 def admin_month(request: Request, month: str):
     require_admin(request)
@@ -194,3 +232,50 @@ def admin_cancel(booking_id: int, request: Request):
     if not bookings.admin_cancel(booking_id):
         raise HTTPException(status_code=404, detail="Prenotazione non trovata.")
     return {"ok": True}
+
+
+@app.post("/api/admin/bookings/{booking_id}/marketing-consent")
+def admin_marketing_consent(booking_id: int, body: MarketingConsentBody, request: Request):
+    require_browser_action(request)
+    account = require_admin(request)
+    try:
+        result = bookings.register_marketing_consent(
+            booking_id=booking_id,
+            channel=body.channel,
+            response_text=body.response_text,
+            recorded_by=account["username"],
+        )
+    except Exception:
+        logger.warning("Registrazione del consenso marketing non disponibile.")
+        raise HTTPException(status_code=503, detail="Consenso non salvato: controlla il database.") from None
+    if not result.get("ok"):
+        raise HTTPException(status_code=422, detail=result.get("error", "Consenso non valido."))
+    return result
+
+
+@app.post("/api/admin/bookings/{booking_id}/marketing-consent/revoke")
+def admin_revoke_marketing_consent(booking_id: int, request: Request):
+    require_browser_action(request)
+    account = require_admin(request)
+    try:
+        revoked = bookings.revoke_marketing_consent(booking_id, account["username"])
+    except Exception:
+        logger.warning("Revoca del consenso marketing non disponibile.")
+        raise HTTPException(status_code=503, detail="Revoca non salvata: controlla il database.") from None
+    if not revoked:
+        raise HTTPException(status_code=404, detail="Consenso marketing attivo non trovato.")
+    return {"ok": True}
+
+
+@app.post("/api/admin/bookings/{booking_id}/arrived")
+def admin_mark_arrived(booking_id: int, request: Request):
+    require_browser_action(request)
+    require_admin(request)
+    try:
+        result = bookings.mark_arrived(booking_id)
+    except Exception:
+        logger.warning("Registrazione dell'arrivo non disponibile.")
+        raise HTTPException(status_code=503, detail="Arrivo non salvato: controlla il database.") from None
+    if not result.get("ok"):
+        raise HTTPException(status_code=422, detail=result.get("error", "Arrivo non valido."))
+    return result

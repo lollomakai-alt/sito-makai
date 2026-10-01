@@ -200,13 +200,11 @@
 
 .menu-detail-copy p {
   margin: 0;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  line-height: 1.55;
+  letter-spacing: 0.5px;
   color: #fff;
-  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-  line-height: 1.65;
-}
-
-.menu-detail-copy .menu-backend-note {
-  margin-top: 28px;
+  text-wrap: pretty;
   padding-top: 20px;
   color: #D4AF37;
   border-top: 1px solid rgba(176, 141, 47, 0.45);
@@ -371,7 +369,7 @@
 .cocktail-carousel {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justifcontent: flex-start;
   gap: clamp(12px, 1.5vw, 20px);
   width: 100%;
   height: 100%;

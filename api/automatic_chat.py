@@ -4,7 +4,15 @@ from datetime import datetime, timedelta
 from typing import Iterable, Optional
 
 from bookings.dates import now_local
-from config import CLOSED_WEEKDAYS, MAX_ADVANCE_DAYS, SLOT_END, SLOT_START
+from config import (
+    AFTER_DINNER_RESERVATION_END,
+    AFTER_DINNER_RESERVATION_START,
+    CLOSED_WEEKDAYS,
+    MAX_ADVANCE_DAYS,
+    SLOT_END,
+    SLOT_START,
+    VENUE_CLOSE_TIME,
+)
 from menu_data import get_menu_data
 from prenotazioni import answer_booking, _serializer, _reply, SESSION_SECONDS, QUESTIONS, PHONE
 from itsdangerous import BadSignature
@@ -20,8 +28,10 @@ CONTACTS = {
 }
 
 OPENING_HOURS = (
-    "Lunedì chiuso. Da martedì a venerdì e domenica siamo aperti "
-    "dalle 18:00 alle 01:00; sabato dalle 18:00 alle 02:00. "
+    f"Lunedì chiuso. Da martedì a domenica il locale chiude alle {VENUE_CLOSE_TIME}. "
+    f"La chat accetta prenotazioni per la cena dalle {SLOT_START} alle {SLOT_END}. "
+    f"Per prenotare il dopocena, disponibile dalle {AFTER_DINNER_RESERVATION_START} "
+    f"alle {AFTER_DINNER_RESERVATION_END}, chiama il locale al {CONTACTS['phone']}. "
     "La cucina è aperta fino alle 23:30."
 )
 
@@ -78,6 +88,7 @@ def _contextual_quick_replies(outgoing, context):
             "persone": ["2 persone", "3 persone", "4 persone", "5 persone"],
             "data": _booking_date_replies(),
             "ora": _booking_time_replies(),
+            "email_confermata": ["Sì, confermo", "Cambia email"],
             "note": ["Nessuna nota"],
             "conferma": ["Sì, confermo", "No"],
             "correggi": ["Cambia persone", "Cambia giorno", "Cambia ora", "Annulla"],
@@ -302,7 +313,13 @@ def answer_chat(message: str, session_token: Optional[str],
             return response
 
     booking_active = state and state.get("step") != "assistente"
-    if topic == "info":
+    booking_correction = booking_active and re.search(r"\b(?:cambia|correggi|modifica)\b", text)
+    booking_email_input = (
+        booking_active
+        and state.get("step") in ("email", "email_confermata")
+        and "@" in message
+    )
+    if topic == "info" and not booking_correction and not booking_email_input:
         reply = _info(text)
         if reply:
             if booking_active:

@@ -40,6 +40,8 @@ def _group_menu_rows(rows):
       "id": row["id"],
       "name_it": row["name"],
       "description_it": row.get("description") or "",
+      "name_en": row.get("name_en") or row["name"],
+      "description_en": row.get("description_en") or row.get("description") or "",
       "price": float(row["price"]),
       "category": category,
     })
@@ -58,7 +60,7 @@ def get_menu_data():
     raise RuntimeError("Mancano SUPABASE_URL o SUPABASE_PUBLISHABLE_KEY.")
 
   query = urlencode({
-    "select": "id,name,description,price,category,is_available",
+    "select": "id,name,description,name_en,description_en,price,category,is_available",
     "is_available": "eq.true",
     "order": "category.asc,id.asc",
   })
@@ -80,4 +82,3 @@ def get_menu_data():
     raise RuntimeError("Supabase Data API non raggiungibile.") from error
 
   return _group_menu_rows(rows)
-

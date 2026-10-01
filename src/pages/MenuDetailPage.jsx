@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
+import { siteCopy } from "../i18n/copy";
+import { useLanguage } from "../i18n/LanguageContext";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
-function formatPrice(price) {
-  return Number(price).toLocaleString("it-IT", {
+function formatPrice(price, language) {
+  return Number(price).toLocaleString(language === "en" ? "en-GB" : "it-IT", {
     style: "currency",
     currency: "EUR",
   });
 }
 
 export default function MenuDetailPage({ containerRef, page }) {
+  const { language } = useLanguage();
+  const copy = siteCopy[language];
   // Riconosce se la pagina richiede dati dinamici (food o cocktail)
   const isDynamicMenu = page.type === "food" || page.type === "cocktail";
   
@@ -49,14 +54,17 @@ export default function MenuDetailPage({ containerRef, page }) {
   return (
     <div ref={containerRef} className="scroll-container menu-detail-page">
       <header className="menu-detail-header">
-        <a href="/" className="brand" aria-label="Torna alla homepage Makai">
+        <a href="/" className="brand" aria-label={copy.common.brandHome}>
           <img
             src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.PNG`}
             alt="Makai Grand Line"
             className="logo-full"
           />
         </a>
-        <a href="/" className="back-home-link">← Torna alla homepage</a>
+        <div className="detail-header-actions">
+          <a href="/" className="back-home-link">{copy.common.backShort}</a>
+          <LanguageSwitcher className="detail-language" />
+        </div>
       </header>
 
       <main className="menu-detail-main">
@@ -79,13 +87,13 @@ export default function MenuDetailPage({ containerRef, page }) {
 
           {/* Sezione categorie dinamiche (funziona identica per food e cocktail) */}
           {isDynamicMenu && (
-            <div className="menu-food-categories" aria-label="Categorie del menu">
+            <div className="menu-food-categories" aria-label={copy.menu.categoriesLabel}>
               {menuStatus === "loading" && (
-                <p className="menu-food-status" role="status">Caricamento del menu…</p>
+                <p className="menu-food-status" role="status">{copy.menu.loading}</p>
               )}
               {menuStatus === "error" && (
                 <p className="menu-food-status menu-food-error" role="alert">
-                  Il menu è momentaneamente fuori rotta. Riprova tra poco.
+                  {copy.menu.error}
                 </p>
               )}
               
@@ -101,14 +109,16 @@ export default function MenuDetailPage({ containerRef, page }) {
                         category.items.map((item) => (
                           <article className="menu-food-item" key={item.id}>
                             <div className="menu-food-item-heading">
-                              <h3>{item.name_it}</h3>
-                              <span>{formatPrice(item.price)}</span>
+                              <h3>{language === "en" ? item.name_en : item.name_it}</h3>
+                              <span>{formatPrice(item.price, language)}</span>
                             </div>
-                            {item.description_it && <p>{item.description_it}</p>}
+                            {(language === "en" ? item.description_en : item.description_it) && (
+                              <p>{language === "en" ? item.description_en : item.description_it}</p>
+                            )}
                           </article>
                         ))
                       ) : (
-                        <p className="menu-empty-category">Nessun elemento disponibile in questa categoria.</p>
+                        <p className="menu-empty-category">{copy.menu.empty}</p>
                       )}
                     </div>
                   </div>

@@ -27,6 +27,7 @@ QUESTIONS = {
     "cognome": "Mi indichi anche il cognome?",
     "telefono": "Un numero di telefono? Lo usiamo per gestire la tua prenotazione.",
     "email": "Una email di riferimento per la prenotazione?",
+    "email_confermata": "Confermi che l'email mostrata è corretta?",
     "note": "Hai richieste particolari (seggiolone, allergie)? Scrivi 'no' se non ne hai.",
     "consensi": "Prima del riepilogo puoi scegliere l'opzione privacy facoltativa.",
     "conferma": "Confermi il riepilogo? (sì/no)",
@@ -123,7 +124,10 @@ def _unavailable(result):
     return text
 
 
-REQUIRED = ("persone", "data", "ora", "nome", "telefono", "email", "note", "consensi")
+REQUIRED = (
+    "persone", "data", "ora", "nome", "telefono", "email",
+    "email_confermata", "note", "consensi",
+)
 
 
 def _advance(state, next_step=None):
@@ -144,8 +148,15 @@ def _advance(state, next_step=None):
         next_step = "cognome"
     state.pop("ritorno", None)
     state["step"] = next_step
-    prompt = _summary(state) if next_step == "conferma" else QUESTIONS[next_step]
-    personal_data_steps = ("nome", "cognome", "telefono", "email", "note", "consensi")
+    if next_step == "conferma":
+        prompt = _summary(state)
+    elif next_step == "email_confermata":
+        prompt = f"È questa la tua email?\n{state['email']}\nConfermi?"
+    else:
+        prompt = QUESTIONS[next_step]
+    personal_data_steps = (
+        "nome", "cognome", "telefono", "email", "email_confermata", "note", "consensi",
+    )
     if next_step in personal_data_steps and not state.get("privacy_notice_shown"):
         state["privacy_notice_shown"] = True
         prompt = PRIVACY_NOTICE + "\n\n" + prompt
@@ -232,12 +243,15 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
         field = next((field for word, field in FIELDS.items() if has(text, (word,))), None)
         if field:
             state.pop(field, None)
+            if field == "email":
+                state.pop("email_confermata", None)
             state.update(step=field, ritorno=complete)
             return _reply(QUESTIONS[field], state)
         state["step"] = "correggi"
         return _reply(QUESTIONS["correggi"], state)
 
-    if _is_information(text):
+    is_email_value = step in ("email", "email_confermata") and "@" in message
+    if _is_information(text) and not is_email_value:
         prompt = _summary(state) if step == "conferma" else QUESTIONS[step]
         return _reply((info_fn(message) or "Per questa informazione contatta il locale.") + "\n\nRiprendiamo: " + prompt, state)
 
@@ -317,7 +331,24 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
         if not email:
             return _reply("Email non valida, riprova.", state)
         state["email"] = email
-        return _advance(state, "note")
+        state.pop("email_confermata", None)
+        return _advance(state, "email_confermata")
+
+    if step == "email_confermata":
+        if simple in ("si", "si confermo", "si, confermo", "confermo", "corretta", "esatto", "ok"):
+            state["email_confermata"] = True
+            return _advance(state, "note")
+        if simple in ("no", "cambia", "cambia email", "non e corretta", "sbagliata"):
+            state.pop("email", None)
+            state.pop("email_confermata", None)
+            state["step"] = "email"
+            return _reply("Va bene, riscrivi l'email corretta.", state)
+        replacement = normalize_email(message)
+        if replacement:
+            state["email"] = replacement
+            state.pop("email_confermata", None)
+            return _advance(state, "email_confermata")
+        return _reply("Conferma con sì oppure scegli “Cambia email”.", state)
 
     if step == "note":
         if len(message.strip()) > 200:
@@ -331,7 +362,7 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
         return _advance(state, "conferma")
 
     if step == "conferma":
-        if simple in ("si", "si confermo", "confermo", "ok", "va bene"):
+        if simple in ("si", "si confermo", "si, confermo", "confermo", "ok", "va bene"):
             result = create_booking(
                 name=state["nome"], email=state["email"], phone=state["telefono"],
                 date=state["data"], time=state["ora"], party_size=state["persone"],
