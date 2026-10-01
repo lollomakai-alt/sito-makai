@@ -357,11 +357,7 @@
   .menu-food-category-panel { grid-template-columns: 1fr; min-height: 0; }
   .menu-food-category-panel .menu-food-category-copy { order: 1; }
   .menu-food-category-panel .menu-food-category-media {
-    order: 2;
-    min-height: 220px;
-    border-top: 1px solid rgba(176, 141, 47, 0.2);
-    border-right: 0;
-    border-left: 0;
+    display: none; /* nasconde le immagini laterali sui pannelli categoria in mobile */
   }
   .menu-food-category-media img { width: 100%; height: auto; }
 }
@@ -393,6 +389,7 @@
 }
 
 @media (max-width: 768px) {
+  .cocktail-carousel { display: none; }
   .cocktail-carousel img {
     flex: 0 0 auto;
     min-height: auto;
