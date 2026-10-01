@@ -213,11 +213,12 @@ html, body {
 
 @media (max-width: 600px) {
   .scroll-container::before {
+    height: 100dvh;
     background-color: #050709;
     background-image:
       linear-gradient(180deg, rgba(5,7,9,0.2), rgba(5,7,9,0.48)),
-      url('/images/Tramonto.webp');
-    background-size: cover, 100% auto;
+      url('/images/Tramonto-mobile.webp');
+    background-size: cover, cover;
     background-position: center, center;
     background-repeat: no-repeat;
     -webkit-backface-visibility: visible;

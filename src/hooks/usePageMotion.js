@@ -62,11 +62,19 @@ export default function usePageMotion(containerRef, currentPath) {
     }
 
     const context = gsap.context(() => {
-      gsap.set(root, {
-        backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto.webp)`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
+      media.add("(min-width: 601px)", () => {
+        gsap.set(root, {
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto.webp)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        });
+
+        return () => {
+          gsap.set(root, {
+            clearProps: "backgroundImage,backgroundSize,backgroundPosition,backgroundAttachment",
+          });
+        };
       });
 
       media.add("(prefers-reduced-motion: no-preference)", () => {
