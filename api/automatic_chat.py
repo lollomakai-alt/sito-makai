@@ -1,7 +1,10 @@
 import re
 import unicodedata
+from datetime import datetime, timedelta
 from typing import Iterable, Optional
 
+from bookings.dates import now_local
+from config import CLOSED_WEEKDAYS, MAX_ADVANCE_DAYS, SLOT_END, SLOT_START
 from menu_data import get_menu_data
 from prenotazioni import answer_booking, _serializer, _reply, SESSION_SECONDS, QUESTIONS, PHONE
 from itsdangerous import BadSignature
@@ -43,6 +46,58 @@ PIRATE_OPENERS = (
     "🏴‍☠️ Dal diario di bordo:",
     "🏴‍☠️ Eccomi sul ponte:",
 )
+
+
+def _booking_date_replies():
+    today = now_local().date()
+    replies = []
+    for offset in range(1, MAX_ADVANCE_DAYS + 1):
+        candidate = today + timedelta(days=offset)
+        if candidate.weekday() in CLOSED_WEEKDAYS:
+            continue
+        replies.append("Domani" if offset == 1 else candidate.strftime("%d/%m/%Y"))
+        if len(replies) == 4:
+            break
+    return replies
+
+
+def _booking_time_replies():
+    current = datetime.strptime(SLOT_START, "%H:%M")
+    end = datetime.strptime(SLOT_END, "%H:%M")
+    replies = []
+    while current <= end and len(replies) < 4:
+        replies.append(current.strftime("%H:%M"))
+        current += timedelta(minutes=90)
+    return replies
+
+
+def _contextual_quick_replies(outgoing, context):
+    step = outgoing.get("step")
+    if step != "assistente":
+        booking_replies = {
+            "persone": ["2 persone", "3 persone", "4 persone", "5 persone"],
+            "data": _booking_date_replies(),
+            "ora": _booking_time_replies(),
+            "note": ["Nessuna nota"],
+            "conferma": ["Sì, confermo", "No"],
+            "correggi": ["Cambia persone", "Cambia giorno", "Cambia ora", "Annulla"],
+        }
+        return booking_replies.get(step, [])
+
+    if context.get("intent") == "event":
+        event = context.get("event", {})
+        if event.get("awaiting_bottles"):
+            return ["1 bottiglia", "2 bottiglie", "3 bottiglie", "Niente prosecco"]
+        if not event.get("category"):
+            return ["Aperitivo", "Cena / apericena", "Dopocena"]
+        if event.get("category") == "dopo cena" and not event.get("package"):
+            return ["Drink + torta", "Drink + snack", "Drink + prosecco"]
+        if event.get("package") and not event.get("people"):
+            return ["10 persone", "15 persone", "20 persone", "30 persone"]
+
+    if context.get("people") and not context.get("intent"):
+        return ["Prenota un tavolo", "Informazioni per una festa"]
+    return None
 
 # Per le condizioni non documentate, il bot rimanda alla verifica con il locale.
 FAQ = {
@@ -227,6 +282,7 @@ def answer_chat(message: str, session_token: Optional[str],
     def respond(reply, booking_state=None):
         outgoing = dict(booking_state or {"step": "assistente"})
         show_booking_consents = outgoing.get("step") == "consensi"
+        quick_replies = _contextual_quick_replies(outgoing, context)
         reply_count = int(context.get("reply_count", 0))
         reply = _pirate_reply(reply, reply_count)
         context["reply_count"] = reply_count + 1
@@ -235,10 +291,15 @@ def answer_chat(message: str, session_token: Optional[str],
             response = _reply(reply, outgoing)
             if show_booking_consents:
                 response["show_booking_consents"] = True
+            if quick_replies is not None:
+                response["quick_replies"] = quick_replies
             return response
         except RuntimeError:
             # Basic information remains usable if session configuration is missing.
-            return {"reply": reply, "session_token": None}
+            response = {"reply": reply, "session_token": None}
+            if quick_replies is not None:
+                response["quick_replies"] = quick_replies
+            return response
 
     booking_active = state and state.get("step") != "assistente"
     if topic == "info":

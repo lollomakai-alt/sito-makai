@@ -225,6 +225,15 @@
 }
 
 @media (max-width: 600px) {
+  .about-panel .about-subtitle {
+    font-size: 1rem;
+    line-height: 1.65;
+    letter-spacing: 0.5px;
+    text-wrap: pretty;
+    -webkit-text-stroke: 0;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
+  }
+
   .about-detail-header { padding: 14px 16px; }
   .about-detail-header .logo-full { height: 46px; }
   .about-detail-back { padding: 8px 12px; font-size: 0.82rem; }

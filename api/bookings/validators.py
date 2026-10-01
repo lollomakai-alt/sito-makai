@@ -9,8 +9,8 @@ from config import (
 from .dates import now_local, _parse
 
 def normalize_email(raw: str):
-    """Restituisce l'email in minuscolo se sembra valida, altrimenti None."""
-    e = (raw or "").strip().lower()
+    """Compatta gli spazi e restituisce l'email in minuscolo, oppure None."""
+    e = re.sub(r"\s+", "", raw or "").lower()
     if len(e) > 120 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}", e):
         return None
     return e

@@ -94,6 +94,15 @@ function createQuickQuestions(previousQuestions = []) {
   });
 }
 
+function createContextualQuickQuestions(replies) {
+  return replies.map((text, index) => ({
+    groupId: `context-${index}`,
+    questionIndex: index,
+    text,
+    contextual: true,
+  }));
+}
+
 const botLinkPattern = /(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140|Informativa|\/privacy)/g;
 const singlePhonePattern = /^(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140)$/;
 
@@ -133,7 +142,11 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
-      setQuickQuestions((current) => createQuickQuestions(current));
+      setQuickQuestions((current) => (
+        current.some((question) => question.contextual)
+          ? current
+          : createQuickQuestions(current)
+      ));
     }
     wasOpenRef.current = isOpen;
   }, [isOpen]);
@@ -191,6 +204,12 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
       if (data.show_booking_consents) {
         setConsensoRicordami(false);
       }
+      if (Array.isArray(data.quick_replies)) {
+        const replies = data.quick_replies.filter((reply) => typeof reply === "string" && reply.trim());
+        setQuickQuestions(createContextualQuickQuestions(replies));
+      } else {
+        setQuickQuestions((current) => createQuickQuestions(current));
+      }
 
       setMessages((current) => [
         ...current,
@@ -218,6 +237,10 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
 
   function handleQuickQuestion(selectedQuestion) {
     if (sendingRef.current) return;
+    if (selectedQuestion.contextual) {
+      sendMessage(selectedQuestion.text);
+      return;
+    }
     const group = quickQuestionGroups.find(({ id }) => id === selectedQuestion.groupId);
     if (!group) return;
 

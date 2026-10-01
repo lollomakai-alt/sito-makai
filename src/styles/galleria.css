@@ -163,3 +163,16 @@
 @media (max-width: 480px) {
   .gallery-grid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 360px) {
+  .gallery-page-header .logo-full { height: 36px; }
+  .gallery-back-home { padding: 7px 9px; font-size: 0.72rem; }
+}
+
+@media (max-width: 600px) and (hover: none) {
+  .gallery-card:hover,
+  .gallery-card:hover img,
+  .gallery-card:focus-visible img {
+    transform: none;
+  }
+}

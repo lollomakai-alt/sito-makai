@@ -366,6 +366,11 @@
   .menu-food-category-media img { width: 100%; height: auto; }
 }
 
+@media (max-width: 360px) {
+  .menu-detail-header .logo-full { height: 36px; }
+  .back-home-link { padding: 7px 9px; font-size: 0.72rem; }
+}
+
 /* Foto del pannello Cocktails in colonna */
 .cocktail-carousel {
   display: flex;

@@ -295,3 +295,33 @@
   }
   .ai-chat-box { width: 300px; right: 15px; bottom: 15px; }
 }
+
+@media (max-width: 600px) {
+  .ai-chat-box {
+    right: 12px;
+    bottom: 12px;
+    width: min(350px, calc(100vw - 24px));
+    height: min(560px, calc(100dvh - 24px));
+  }
+}
+
+@media (max-width: 600px) and (hover: none) {
+  .chat-toggle:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .chat-messages {
+    padding: 14px;
+  }
+
+  .chat-quick-questions {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-input-area {
+    padding: 12px;
+    gap: 7px;
+  }
+}

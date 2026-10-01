@@ -78,16 +78,26 @@ function PhotoWall() {
                   "--y": `${(photo.y / 480) * 100}%`,
                   "--w": `${(photo.w / 1400) * 100}%`,
                   "--h": `${(photo.h / 480) * 100}%`,
+                  "--mobile-x": `${((photo.x - photo.w * 0.125) / 1400) * 100}%`,
+                  "--mobile-y": `${((photo.y - photo.h * 0.125) / 480) * 100}%`,
+                  "--mobile-w": `${((photo.w * 1.25) / 1400) * 100}%`,
+                  "--mobile-h": `${((photo.h * 1.25) / 480) * 100}%`,
                   "--r": `${photo.rotate || 0}deg`,
                   "--z": photo.layer,
                 }}
               >
-                <img
-                  src={`${import.meta.env.BASE_URL}images/hero/${photo.src}`}
-                  alt=""
-                  decoding="async"
-                  draggable={false}
-                />
+                <picture>
+                  <source
+                    media="(max-width: 600px)"
+                    srcSet={`${import.meta.env.BASE_URL}images/hero/${photo.src} 1x, ${import.meta.env.BASE_URL}images/hero/mobile/${photo.src} 2x, ${import.meta.env.BASE_URL}images/${photo.src} 3x`}
+                  />
+                  <img
+                    src={`${import.meta.env.BASE_URL}images/hero/${photo.src}`}
+                    alt=""
+                    decoding="async"
+                    draggable={false}
+                  />
+                </picture>
               </figure>
             ))}
           </div>

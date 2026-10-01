@@ -1,0 +1,68 @@
+import os
+import sys
+import unittest
+from datetime import timedelta
+from pathlib import Path
+
+
+API_DIR = Path(__file__).resolve().parents[1] / "api"
+sys.path.insert(0, str(API_DIR))
+os.environ.setdefault("CHAT_SESSION_SECRET", "test-secret-for-chat-quick-replies-123456")
+
+from automatic_chat import answer_chat  # noqa: E402
+from bookings.dates import now_local  # noqa: E402
+from config import CLOSED_WEEKDAYS  # noqa: E402
+from prenotazioni import _serializer, parse_data  # noqa: E402
+
+
+class ChatQuickRepliesTests(unittest.TestCase):
+    def test_booking_replies_follow_people_date_and_time_steps(self):
+        people = answer_chat("Vorrei prenotare un tavolo", None)
+        self.assertEqual(
+            people["quick_replies"],
+            ["2 persone", "3 persone", "4 persone", "5 persone"],
+        )
+
+        dates = answer_chat("2 persone", people["session_token"])
+        self.assertEqual(len(dates["quick_replies"]), 4)
+        for value in dates["quick_replies"]:
+            day = parse_data(value)
+            self.assertIsNotNone(day)
+            self.assertNotIn(day.weekday(), CLOSED_WEEKDAYS)
+
+        open_day = now_local().date() + timedelta(days=1)
+        while open_day.weekday() in CLOSED_WEEKDAYS:
+            open_day += timedelta(days=1)
+        times = answer_chat(open_day.strftime("%d/%m/%Y"), dates["session_token"])
+        self.assertEqual(times["quick_replies"], ["18:00", "19:30", "21:00", "22:30"])
+
+    def test_event_package_replies_follow_selected_time_band(self):
+        categories = answer_chat("Vorrei sapere i pacchetti festa", None)
+        self.assertEqual(
+            categories["quick_replies"],
+            ["Aperitivo", "Cena / apericena", "Dopocena"],
+        )
+
+        packages = answer_chat("Dopocena", categories["session_token"])
+        self.assertEqual(
+            packages["quick_replies"],
+            ["Drink + torta", "Drink + snack", "Drink + prosecco"],
+        )
+
+    def test_personal_contact_steps_hide_unrelated_questions(self):
+        token = _serializer().dumps({
+            "mode": "booking",
+            "step": "nome",
+            "started_at": 1_700_000_000,
+            "persone": 2,
+            "data": "2026-10-10",
+            "ora": "20:00",
+            "checked": [2, "2026-10-10", "20:00"],
+            "context": {"intent": "booking"},
+        })
+        result = answer_chat("Mario Rossi", token)
+        self.assertEqual(result["quick_replies"], [])
+
+
+if __name__ == "__main__":
+    unittest.main()
