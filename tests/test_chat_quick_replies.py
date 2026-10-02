@@ -62,6 +62,21 @@ class ChatQuickRepliesTests(unittest.TestCase):
             ["Drink + torta", "Drink + snack", "Drink + prosecco"],
         )
 
+    def test_event_package_selection_keeps_people_step(self):
+        categories = answer_chat("Vorrei sapere i pacchetti festa", None)
+        packages = answer_chat("Dopocena", categories["session_token"])
+        selected = answer_chat("Drink + torta", packages["session_token"])
+
+        self.assertIn("Per quante persone", selected["reply"])
+        self.assertEqual(
+            selected["quick_replies"],
+            ["10 persone", "15 persone", "20 persone", "30 persone"],
+        )
+
+        people = answer_chat("20 persone", selected["session_token"])
+        self.assertIn("20", people["reply"])
+        self.assertIn("persone", people["reply"].lower())
+
     def test_personal_contact_steps_hide_unrelated_questions(self):
         token = _serializer().dumps({
             "mode": "booking",

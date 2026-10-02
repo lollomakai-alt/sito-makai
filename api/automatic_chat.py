@@ -326,9 +326,19 @@ def answer_chat(message: str, session_token: Optional[str],
                 reply += "\n\nPer continuare la prenotazione: " + QUESTIONS[state["step"]]
             return respond(reply, state if booking_active else None)
     # Un vecchio topic evento vale solo quando il messaggio corrente non esprime
-    # già un nuovo intento. Così una richiesta esplicita di menu o drink cambia rotta.
-    event_continuation = context.get("intent") == "event" and topic is None
-    if topic == "event" or event_continuation:
+    # già un nuovo intento. Così una richiesta esplicita di menu o drink cambia rotta,
+    # ma un passaggio dell'evento (pacchetto o numero ospiti) resta nel flusso evento.
+    event_context = context.get("event", {})
+    continuing_event_package = (
+        context.get("intent") == "event"
+        and event_context.get("category") == "dopo cena"
+        and re.search(r"\b(?:drink\s*\+\s*(?:torta|snack|prosecco)|torta|snack|prosecco)\b", text)
+    )
+    event_continuation = (
+        context.get("intent") == "event"
+        and (topic is None or continuing_event_package or count is not None)
+    )
+    if topic == "event" or event_continuation or continuing_event_package:
         if booking_active:
             context["booking_draft"] = {k: v for k, v in state.items() if k != "context"}
         context["intent"] = "event"

@@ -144,6 +144,10 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
   const [consensoRicordami, setConsensoRicordami] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(thinkingMessages[0]);
   const [quickQuestions, setQuickQuestions] = useState(() => createQuickQuestions());
+  
+  // 🔄 Stato per tracciare se il preventivo/evento precedente è stato completato
+  const [isEventCompleted, setIsEventCompleted] = useState(false);
+
   const messagesEndRef = useRef(null);
   const sessionTokenRef = useRef(null);
   const sendingRef = useRef(false);
@@ -179,6 +183,7 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
     bookingStartHandledRef.current = true;
     sessionTokenRef.current = null;
     setShowBookingConsents(false);
+    setIsEventCompleted(false);
     sendMessage("Vorrei prenotare un tavolo.", { showUserMessage: false });
   }, [isOpen, startBooking, isLoading]);
 
@@ -222,11 +227,33 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
       if (data.show_booking_consents) {
         setConsensoRicordami(false);
       }
+
+      // 🔄 Rileva se la logica evento è stata completata
+      const lowerReply = data.reply.toLowerCase();
+      if (
+        data.is_event_completed ||
+        lowerReply.includes("totale") ||
+        lowerReply.includes("preventivo") ||
+        lowerReply.includes("riepilogo")
+      ) {
+        setIsEventCompleted(true);
+      }
+
       if (Array.isArray(data.quick_replies)) {
         const replies = data.quick_replies.filter((reply) => typeof reply === "string" && reply.trim());
-        setQuickQuestions(createContextualQuickQuestions(replies));
+        if (replies.length > 0) {
+          setQuickQuestions(createContextualQuickQuestions(replies));
+        } else {
+          setQuickQuestions((current) => {
+            const hasContextual = current.some((question) => question.contextual);
+            return hasContextual ? current : createQuickQuestions(current);
+          });
+        }
       } else {
-        setQuickQuestions((current) => createQuickQuestions(current));
+        setQuickQuestions((current) => {
+          const hasContextual = current.some((question) => question.contextual);
+          return hasContextual ? current : createQuickQuestions(current);
+        });
       }
 
       setMessages((current) => [
@@ -250,11 +277,37 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
 
   function handleSubmit(event) {
     event.preventDefault();
+    const cleanText = input.trim().toLowerCase();
+
+    // 🔄 Reset sessione se un evento precedente era completato e l'utente ne richiede uno nuovo da input testo
+    if (isEventCompleted && (cleanText.includes("evento") || cleanText.includes("festa") || cleanText.includes("preventivo") || cleanText.includes("prenotare"))) {
+      sessionTokenRef.current = null;
+      setShowBookingConsents(false);
+      setIsEventCompleted(false);
+    }
+
     sendMessage(input);
   }
 
   function handleQuickQuestion(selectedQuestion) {
     if (sendingRef.current) return;
+
+    const lowerText = selectedQuestion.text.toLowerCase();
+    const isEventQuestion =
+      selectedQuestion.groupId === "eventi" ||
+      lowerText.includes("festa") ||
+      lowerText.includes("evento") ||
+      lowerText.includes("preventivo") ||
+      lowerText.includes("compleanno") ||
+      lowerText.includes("apericena");
+
+    // 🔄 RESET: Azzera il contesto solo se la logica evento precedente era stata completata
+    if (isEventQuestion && isEventCompleted) {
+      sessionTokenRef.current = null;
+      setShowBookingConsents(false);
+      setIsEventCompleted(false);
+    }
+
     if (selectedQuestion.contextual) {
       sendMessage(selectedQuestion.text);
       return;
