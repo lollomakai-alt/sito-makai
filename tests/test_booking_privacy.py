@@ -121,7 +121,7 @@ class BookingPrivacyTests(unittest.TestCase):
         summary = _handle(state, 'continua', lambda _: None)
         self.assertFalse(state['consenso_ricordami'])
         self.assertEqual(state['step'], 'conferma')
-        self.assertIn('Ricordare nome e telefono per 12 mesi: no.', summary['reply'])
+        self.assertNotIn('Ricordare nome e telefono', summary['reply'])
 
         result = {
             'ok': True,

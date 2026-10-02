@@ -20,14 +20,18 @@ class EmailValidationTests(unittest.TestCase):
             "mario.rossi@gmail.com",
         )
 
-    def test_accepts_an_address_written_with_spaces(self):
+    def test_accepts_only_outer_spaces(self):
         self.assertEqual(
-            normalize_email("Mario Rossi @ GMAIL . COM"),
+            normalize_email("  MarioRossi@GMAIL.COM  "),
             "mariorossi@gmail.com",
         )
 
     def test_rejects_invalid_addresses(self):
         invalid = (
+            "marco gmail@gmail.com",
+            "Mario Rossi @ GMAIL . COM",
+            "mario@gmail.com altro",
+            "mario@gmail.com\naltro@gmail.com",
             "mario.rossi gmail.com",
             "mario@@gmail.com",
             "mario@gmail",
@@ -55,17 +59,29 @@ class EmailValidationTests(unittest.TestCase):
             "context": {"intent": "booking"},
         })
 
-        confirmation = answer_chat("Mario Rossi @ GMAIL . COM", token)
+        rejected = answer_chat("marco gmail@gmail.com", token)
+        self.assertIn("senza spazi o altre parole", rejected["reply"])
+        rejected_state = _serializer().loads(rejected["session_token"])
+        self.assertEqual(rejected_state["step"], "email")
+        self.assertNotIn("email", rejected_state)
+
+        confirmation = answer_chat("  MarioRossi@GMAIL.COM  ", rejected["session_token"])
         self.assertIn("mariorossi@gmail.com", confirmation["reply"])
         self.assertEqual(
             confirmation["quick_replies"],
             ["Sì, confermo", "Cambia email"],
         )
 
+        invalid_correction = answer_chat("marco gmail@gmail.com", confirmation["session_token"])
+        self.assertIn("senza spazi o altre parole", invalid_correction["reply"])
+        correction_state = _serializer().loads(invalid_correction["session_token"])
+        self.assertEqual(correction_state["email"], "mariorossi@gmail.com")
+        self.assertNotIn("email_confermata", correction_state)
+
         change = answer_chat("Cambia email", confirmation["session_token"])
         self.assertIn("Una email di riferimento", change["reply"])
 
-        corrected = answer_chat("NUOVO INDIRIZZO @ TISCALI . IT", change["session_token"])
+        corrected = answer_chat("NUOVOINDIRIZZO@TISCALI.IT", change["session_token"])
         self.assertIn("nuovoindirizzo@tiscali.it", corrected["reply"])
         self.assertEqual(
             corrected["quick_replies"],

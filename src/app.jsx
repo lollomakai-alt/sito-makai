@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import usePageMotion from "./hooks/usePageMotion";
 
-import "./styles/index.css";
 import "./styles/app.css";
 import "./styles/hero.css";
 import "./styles/chi-siamo.css";

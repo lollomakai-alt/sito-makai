@@ -5,7 +5,7 @@ import unicodedata
 from config import MAX_ACTIVE_PER_PHONE
 from database import db
 from .dates import now_local, _parse
-from .validators import normalize_email, normalize_phone, _validate
+from .validators import normalize_email, normalize_phone, normalize_booking_name, _validate
 from .tables import _find_tables, _alternatives
 
 MARKETING_CONSENT_TEXT = (
@@ -95,9 +95,9 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
     request_started_at proviene dalla sessione firmata dal server: permette di
     riconoscere un reinvio della stessa conferma, anche su processi diversi.
     """
-    name = (name or "").strip()[:60]
-    if len(name) < 2:
-        return {"ok": False, "error": "Serve il nome per la prenotazione."}
+    name = normalize_booking_name(name)
+    if not name:
+        return {"ok": False, "error": "Inserisci nome e cognome, senza numeri o simboli."}
     p = normalize_email(email)
     if not p:
         return {"ok": False, "error": "Email non valida."}
@@ -152,9 +152,9 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
 def create_admin_booking(name: str, phone: str, date: str, time: str,
                          party_size: int, email: str = "", notes: str = "") -> dict:
     """Inserisce una prenotazione ricevuta dal gestore, senza acquisire consensi."""
-    name = (name or "").strip()[:60]
-    if len(name) < 2:
-        return {"ok": False, "error": "Serve il nome per la prenotazione."}
+    name = normalize_booking_name(name)
+    if not name:
+        return {"ok": False, "error": "Inserisci nome e cognome, senza numeri o simboli."}
 
     ph = normalize_phone(phone)
     if not ph:
@@ -165,11 +165,17 @@ def create_admin_booking(name: str, phone: str, date: str, time: str,
     if raw_email and not normalized_email:
         return {"ok": False, "error": "Email non valida."}
 
-    notes = (notes or "").strip()[:300]
+    notes = (notes or "").strip()
+    if len(notes) > 300:
+        return {"ok": False, "error": "Le note possono contenere al massimo 300 caratteri."}
+    if type(party_size) is not int:
+        return {"ok": False, "error": "Il numero di persone deve essere intero."}
+    dt, err = _validate(date, time, party_size)
+    if err:
+        return {"ok": False, "error": err}
+    if not re.fullmatch(r"[0-9]{2}:(?:00|30)", time):
+        return {"ok": False, "error": "Scegli un orario a intervalli di 30 minuti."}
     with db(write=True) as c:
-        dt, err = _validate(date, time, party_size)
-        if err:
-            return {"ok": False, "error": err}
         if len(_upcoming_for_phone(c, ph)) >= MAX_ACTIVE_PER_PHONE:
             return {"ok": False, "code": "phone_limit", "error":
                     f"Questo telefono ha già {MAX_ACTIVE_PER_PHONE} prenotazioni attive."}

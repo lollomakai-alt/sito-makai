@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+const launcherMessages = [
+  "Clicca qui",
+  "Info",
+  "Prenota",
+  "Menu",
+  "Cocktail",
+];
+
 const welcomeMessages = [
   "Arrr, benvenuto a bordo. Sono la vedetta digitale del Makai: quale rotta scegli?",
   "Ahoy, Capitano! La ciurma è pronta. Chiedimi di menu, cocktail, eventi o prenotazioni.",
@@ -127,6 +135,8 @@ function renderMessage(text, sender) {
 }
 
 export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClose }) {
+  const [launcherIndex, setLauncherIndex] = useState(0);
+  const [launcherPaused, setLauncherPaused] = useState(false);
   const [messages, setMessages] = useState(() => [createInitialMessage()]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -139,6 +149,14 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
   const sendingRef = useRef(false);
   const wasOpenRef = useRef(isOpen);
   const bookingStartHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen || launcherPaused) return;
+    const timer = window.setInterval(() => {
+      setLauncherIndex((current) => (current + 1) % launcherMessages.length);
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, launcherPaused]);
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
@@ -273,13 +291,19 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
         aria-expanded={isOpen}
         aria-controls="ai-chat"
         onClick={onOpen}
+        onMouseEnter={() => setLauncherPaused(true)}
+        onMouseLeave={() => setLauncherPaused(false)}
+        onFocus={() => setLauncherPaused(true)}
+        onBlur={() => setLauncherPaused(false)}
       >
         <img
           src={`${import.meta.env.BASE_URL}images/logo/pirate-ship-assistant.png`}
           alt=""
           aria-hidden="true"
         />
-        <span className="chat-tooltip">Ehi, pirata! Chiedimi tutto!</span>
+        {!isOpen && (
+          <span className="chat-tooltip" aria-hidden="true">{launcherMessages[launcherIndex]}</span>
+        )}
       </button>
 
       {isOpen && (
@@ -306,7 +330,7 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
                   onChange={(event) => setConsensoRicordami(event.target.checked)}
                   disabled={isLoading}
                 />
-                <span>Ricordati di me: conserva i miei dati per 1 anno, così prenoto più in fretta la prossima volta</span>
+                <span>Ricordami per sconti e offerte</span>
               </label>
               <p className="chat-consent-privacy">
                 <a className="chat-link" href="/privacy" target="_blank" rel="noopener noreferrer">

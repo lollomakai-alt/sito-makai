@@ -112,12 +112,12 @@
 }
 
 .hero-content h1 {
-  /* usa .hero-title da common.css; qui solo layout */
+  /* usa .hero-title da app.css; qui solo layout */
   margin: 0;
 }
 
 .hero-description {
-  /* usa .hero-subtitle da common.css; qui solo layout */
+  /* usa .hero-subtitle da app.css; qui solo layout */
   margin: clamp(24px, 4vw, 48px) auto 0;
 }
 

@@ -25,12 +25,12 @@ Tiki Cocktail Bar & Ristorante a tema One Piece — Pigneto, Roma
 │   ├── config.py          # Costanti configurabili via env
 │   └── requirements.txt   # Dipendenze Python
 ├── src/                   # Frontend React
-│   ├── components/        # Componenti UI (ChatWidget, HeroSection, MenuSection, ecc.)
+│   ├── components/        # Componenti UI (ChatWidget, HeroSection, HomeMenuSection, ecc.)
 │   ├── pages/             # Pagine (MenuDetailPage, AboutPage, GalleryPage, Privacy.jsx)
 │   ├── styles/            # CSS per sezione
 │   ├── data/siteContent.js# Contenuto pagine menu (food/drink)
 │   ├── hooks/             # Hook custom (usePageMotion)
-│   └── main.jsx           # Entry point Vite
+│   └── sito.jsx           # Entry point Vite
 ├── public/images/         # Asset statici serviti da Vite
 ├── vercel.json            # Configurazione Vercel Services
 └── package.json
@@ -102,7 +102,7 @@ Il repo è configurato come **Vercel Project con due Services** (`vercel.json`):
 - **Chatbot "Nostromo"** (`/api/chat`): menu, cocktail, eventi, prenotazioni conversazionali
 - **Prenotazioni** con disponibilità real-time, limite 6 persone online, consenso privacy opzionale (`consenso_ricordami`)
 - **Pagine Menu** (`/menu-food`, `/menu-drink`) con dati live da Supabase
-- **Admin panel** (`/admin/login`): calendario prenotazioni, cancellazioni, protezione cookie `Secure; HttpOnly; SameSite=Lax`
+- **Agenda separata**: progetto autonomo `../makai-agenda`, avvio con `npm run dev` su http://localhost:5174. Il backend condiviso espone ancora le API protette `/api/admin/*`.
 - **Privacy page** (`/privacy`) linkata dalla chat
 - **Gallery**, **Chi siamo**, **Contatti**, **Eventi**
 
@@ -117,3 +117,9 @@ npm run preview   # Anteprima build locale
 ## Licenza
 
 Progetto privato — Makai Grand Line Pigneto.
+
+## Agenda indipendente
+
+Il sito pubblico monta soltanto `src/app.jsx`. Il frontend dell’agenda è stato spostato in `../makai-agenda`, con package.json, stili, configurazione e test propri. Nessun file del sito importa quel progetto.
+
+Le API in `api/` restano condivise tra chat cliente e agenda: l’estrazione non cambia database, credenziali o regole di prenotazione. Il vecchio percorso frontend `/admin/login` non è più il login dell’agenda.

@@ -106,10 +106,9 @@ def _reply(text, state=None):
 
 def _summary(state):
     day = date.fromisoformat(state["data"]).strftime("%d/%m/%Y")
-    consent = "sì" if state.get("consenso_ricordami", False) else "no"
     return (f"Riepilogo: {state['persone']} persone, {day} alle {state['ora']}, "
             f"a nome {state['nome']}.\nTelefono: {state['telefono']}\nEmail: {state['email']}\n"
-            f"Note: {state.get('note') or 'nessuna'}.\nRicordare nome e telefono per 12 mesi: {consent}.\n"
+            f"Note: {state.get('note') or 'nessuna'}.\n"
             "Confermi? (sì/no). Puoi anche scrivere 'cambia' seguito dal campo da correggere.")
 
 
@@ -255,7 +254,7 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
         prompt = _summary(state) if step == "conferma" else QUESTIONS[step]
         return _reply((info_fn(message) or "Per questa informazione contatta il locale.") + "\n\nRiprendiamo: " + prompt, state)
 
-    if step not in ("conferma", "correggi", "note", "cognome"):
+    if step not in ("conferma", "correggi", "note", "cognome", "email", "email_confermata"):
         error = _prefill(state, message)
         if error:
             terminal = "da 1 a" in error or "prenotazioni attive" in error
@@ -329,7 +328,7 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
     if step == "email":
         email = normalize_email(message)
         if not email:
-            return _reply("Email non valida, riprova.", state)
+            return _reply("Scrivi solo l'indirizzo email completo, senza spazi o altre parole (esempio: nome@dominio.it).", state)
         state["email"] = email
         state.pop("email_confermata", None)
         return _advance(state, "email_confermata")
@@ -348,6 +347,8 @@ def _handle(state, message, info_fn, consenso_ricordami=False):
             state["email"] = replacement
             state.pop("email_confermata", None)
             return _advance(state, "email_confermata")
+        if "@" in message:
+            return _reply("L'indirizzo inserito non è valido. Scrivi solo l'email completa, senza spazi o altre parole, oppure scegli “Cambia email”.", state)
         return _reply("Conferma con sì oppure scegli “Cambia email”.", state)
 
     if step == "note":

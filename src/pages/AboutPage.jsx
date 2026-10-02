@@ -33,7 +33,6 @@ export default function AboutPage({ containerRef }) {
   const { language } = useLanguage();
   const common = siteCopy[language].common;
   const copy = aboutPageCopy[language];
-  const paragraphStyle = { color: "#ffffff", fontFamily: "Georgia, serif", lineHeight: "1.7", fontSize: "1.1rem" };
 
   return (
     <div ref={containerRef} className="scroll-container about-detail-page">
@@ -53,11 +52,10 @@ export default function AboutPage({ containerRef }) {
 
       <main className="about-detail-main">
         <section className="about-detail-section content-section" aria-labelledby="about-detail-title">
-          <h1 id="about-detail-title" className="about-title">{copy.title}</h1>
-          
-          {/* Stile applicato direttamente per testo bianco e font Georgia più leggibile */}
-          <div className="about-detail-copy" style={{ color: '#ffffff', fontFamily: 'Georgia, serif' }}>
-            {copy.paragraphs.map((paragraph) => <p key={paragraph} style={paragraphStyle}>{paragraph}</p>)}
+          <h1 id="about-detail-title" className="section-title">{copy.title}</h1>
+
+          <div className="about-detail-copy panel">
+            {copy.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
           </div>
 
           <div className="about-detail-photos">

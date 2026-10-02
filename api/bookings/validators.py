@@ -18,8 +18,8 @@ _EMAIL_PATTERN = re.compile(
 
 
 def normalize_email(raw: str):
-    """Accetta spazi e maiuscole, poi restituisce un indirizzo valido in minuscolo."""
-    email = re.sub(r"\s+", "", raw or "").lower()
+    """Ignora solo spazi esterni e maiuscole, senza unire parole separate."""
+    email = (raw or "").strip().lower()
     if not email or len(email) > 120 or not _EMAIL_PATTERN.fullmatch(email):
         return None
     return email
@@ -36,13 +36,28 @@ def normalize_phone(raw: str):
     digits = re.sub(r"\D", "", s)
     if not 8 <= len(digits) <= 15:
         return None
-    if s.startswith("+"):
-        return "+" + digits
-    if digits.startswith("3") and len(digits) in (9, 10):
-        return "+39" + digits  # cellulare italiano senza prefisso
-    if digits.startswith("39") and len(digits) in (11, 12):
-        return "+" + digits
-    return digits
+    if s.startswith("+39") or (not s.startswith("+") and digits.startswith("39")):
+        national = digits[2:]
+    elif s.startswith("+"):
+        return "+" + digits if digits[0] != "0" else None
+    else:
+        national = digits
+    if re.fullmatch(r"3[0-9]{9}|0[0-9]{5,10}", national):
+        return "+39" + national
+    return None
+
+
+def normalize_booking_name(raw: str):
+    name = re.sub(r"\s+", " ", (raw or "").strip())
+    if not 2 <= len(name) <= 60:
+        return None
+    parts = name.split(" ")
+    if len(parts) < 2:
+        return None
+    if not all(re.fullmatch(r"[^\W\d_]+(?:['’\-][^\W\d_]+)*", part, re.UNICODE) for part in parts):
+        return None
+    return name
+
 
 
 

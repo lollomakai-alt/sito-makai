@@ -43,8 +43,11 @@
   position: absolute;
   right: 66px;
   bottom: 58px;
-  width: max-content;
-  max-width: 220px;
+  width: 108px;
+  max-width: calc(100vw - 104px);
+  min-height: 42px;
+  display: grid;
+  place-items: center;
   padding: 10px 14px;
   color: #24150d;
   background: #fff3d2;
@@ -56,19 +59,7 @@
   line-height: 1.3;
   text-align: center;
   box-shadow: 0 8px 18px rgba(0,0,0,0.42);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(8px, 6px) scale(0.96);
-  transform-origin: bottom right;
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-}
-
-.chat-toggle:hover .chat-tooltip,
-.chat-toggle:focus-visible .chat-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(0, 0) scale(1);
+  cursor: pointer;
 }
 
 .chat-tooltip::after {
@@ -289,7 +280,9 @@
   .chat-tooltip {
     right: 50px;
     bottom: 45px;
-    max-width: 150px;
+    width: 94px;
+    max-width: calc(100vw - 78px);
+    min-height: 36px;
     padding: 8px 10px;
     font-size: 0.78rem;
   }

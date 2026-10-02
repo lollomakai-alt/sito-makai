@@ -131,7 +131,7 @@ class AdminBookingBody(BaseModel):
     email: str = Field(default="", max_length=120)
     date: str = Field(min_length=10, max_length=10)
     time: str = Field(min_length=5, max_length=5)
-    party_size: int = Field(ge=1, le=MAX_PARTY_SIZE)
+    party_size: int = Field(strict=True, ge=1, le=MAX_PARTY_SIZE)
     notes: str = Field(default="", max_length=300)
 
 

@@ -31,13 +31,13 @@
 
 /* TITOLO */
 .about-title {
-  /* usa .section-title da common.css; qui solo margini specifici */
+  /* usa .section-title da app.css; qui solo margini specifici */
   margin: 0 0 clamp(24px, 4vw, 48px);
 }
 
 /* PARAGRAFO */
 .about-subtitle {
-  /* usa .section-subtitle da common.css; qui solo layout specifico */
+  /* usa .section-subtitle da app.css; qui solo layout specifico */
   max-width: 900px;
   margin: clamp(24px, 4vw, 48px) auto 0;
 }
@@ -132,9 +132,10 @@
 .about-detail-copy {
   max-width: 850px;
   margin: 0 auto;
+  padding: clamp(24px, 5vw, 48px) clamp(18px, 4vw, 40px);
   color: #fff;
-  font-family: Georgia, 'Times New Roman', serif; /* Font Georgia classico */
-  font-size: clamp(1.1rem, 2.2vw, 1.35rem); /* Dimensione leggibile */
+  font-family: Georgia, serif;
+  font-size: 1.1rem;
   line-height: 1.7;
   text-shadow: 0 2px 8px rgba(0,0,0,0.8); /* Ombra più pulita per il testo chiaro */
 }
@@ -185,7 +186,7 @@
 
 @media (max-width: 600px) {
   .about-panel .about-subtitle {
-    /* override per mobile: usa dimensioni standard da common.css */
+    /* override per mobile: usa dimensioni standard da app.css */
   }
 
   .about-detail-header { padding: 14px 16px; }
