@@ -7,6 +7,7 @@ from config import CLOSED_WEEKDAYS, MAX_ADVANCE_DAYS, MAX_PARTY_SIZE
 from database import db
 from .dates import now_local
 from .tables import TABLES, _units
+from .occupancy import reconstruct
 
 
 def month_availability(month: str, party_size: int):
@@ -26,18 +27,20 @@ def month_availability(month: str, party_size: int):
         connection.execute("SET TRANSACTION READ ONLY")
         connection.execute("SET LOCAL statement_timeout = '5000ms'")
         rows = connection.execute(
-            "SELECT booking_date, party_size, tables FROM bookings "
+            "SELECT id, booking_date, booking_time, party_size, tables FROM bookings "
             "WHERE booking_date >= %s AND booking_date <= %s AND status='confirmed'",
             (max(first, now.date()).isoformat(), min(last, horizon).isoformat()),
         ).fetchall()
     occupied, covers, uncertain = {}, {}, set()
+    grouped = {}
     for row in rows:
-        day = str(row["booking_date"])
-        ids = {value.strip() for value in (row["tables"] or "").split(",") if value.strip()}
-        covers[day] = covers.get(day, 0) + int(row["party_size"])
-        if not ids or not ids.issubset(TABLES) or sum(TABLES[t] for t in ids) < int(row["party_size"]):
+        grouped.setdefault(str(row["booking_date"]), []).append(row)
+    for day, bookings in grouped.items():
+        snapshot, unresolved = reconstruct(bookings)
+        if unresolved:
             uncertain.add(day)
-        occupied.setdefault(day, set()).update(ids)
+        covers[day] = sum(row["party_size"] for row in bookings)
+        occupied[day] = {t.strip() for row in snapshot.rows for t in (row["tables"] or "").split(",") if t.strip()}
     result = []
     for value in range(1, last.day + 1):
         day = date(year, number, value)

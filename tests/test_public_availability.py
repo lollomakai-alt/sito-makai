@@ -11,6 +11,14 @@ from bookings.public_availability import month_availability
 from bookings.tables import TABLES
 
 
+def booking(id=1, tables='', people=2, day='2026-10-06', time='20:00'):
+    return dict(id=id, booking_date=day, booking_time=time, party_size=people, tables=tables)
+
+
+def filled_tables(except_ids=(), day='2026-10-06'):
+    return [booking(int(t), t, seats, day) for t, seats in TABLES.items() if t not in except_ids]
+
+
 class AvailabilityTests(unittest.TestCase):
     def run_calendar(self, people, rows=(), now=None):
         statements = []
@@ -33,22 +41,49 @@ class AvailabilityTests(unittest.TestCase):
 
     def test_size_changes_availability_with_same_agenda(self):
         busy = [t for t in TABLES if t != '12']
-        rows = [{'booking_date': '2026-10-06', 'party_size': 40, 'tables': ','.join(busy)}]
+        rows = filled_tables({'12'})
         self.assertEqual(self.run_calendar(2, rows)['2026-10-06'], 'available')
         self.assertEqual(self.run_calendar(3, rows)['2026-10-06'], 'full')
 
     def test_six_requires_suitable_joinable_tables(self):
         free = {'12', '14', '22'}
-        rows = [{'booking_date': '2026-10-06', 'party_size': 36, 'tables': ','.join(set(TABLES) - free)}]
+        rows = filled_tables(free)
         self.assertEqual(self.run_calendar(6, rows)['2026-10-06'], 'full')
         self.assertEqual(self.run_calendar(6)['2026-10-06'], 'available')
 
     def test_closed_past_and_unknown_table_data(self):
-        rows = [{'booking_date': '2026-10-06', 'party_size': 2, 'tables': ''}]
+        rows = [booking(tables='unknown', people=30)]
         days = self.run_calendar(2, rows)
         self.assertEqual(days['2026-10-05'], 'closed')
         self.assertEqual(days['2026-10-02'], 'past')
         self.assertEqual(days['2026-10-06'], 'unverified')
+
+    def test_empty_table_assignment_uses_known_cover_count(self):
+        rows = [booking()]
+        self.assertEqual(self.run_calendar(2, rows)['2026-10-06'], 'available')
+
+        over_capacity = filled_tables()
+        self.assertEqual(self.run_calendar(1, over_capacity)['2026-10-06'], 'full')
+
+    def test_multiple_missing_assignments_count_against_remaining_tables(self):
+        rows = filled_tables({'12', '13'}) + [booking(100, None), booking(101, '')]
+        self.assertEqual(self.run_calendar(1, rows)['2026-10-06'], 'full')
+        self.assertIsNone(rows[-2]['tables'])
+        self.assertEqual(rows[-1]['tables'], '')
+
+    def test_invalid_combination_is_reconstructed_in_memory(self):
+        rows = [booking(tables='12,14', people=4)]
+        self.assertEqual(self.run_calendar(6, rows)['2026-10-06'], 'available')
+        self.assertEqual(rows[0]['tables'], '12,14')
+
+    def test_october_28_29_30_regression(self):
+        rows = [booking(83, '', 3, '2026-10-28'), booking(40, '', 4, '2026-10-29'),
+                booking(63, '', 6, '2026-10-30'), booking(52, '', 30, '2026-10-30', '22:30')]
+        for size in range(1, 7):
+            days = self.run_calendar(size, rows)
+            self.assertEqual(days['2026-10-28'], 'available')
+            self.assertEqual(days['2026-10-29'], 'available')
+            self.assertEqual(days['2026-10-30'], 'unverified')
 
     def test_today_available_even_late_in_the_evening(self):
         days = self.run_calendar(2, now=datetime(2026, 10, 3, 23, 59, tzinfo=TZ))
@@ -56,7 +91,7 @@ class AvailabilityTests(unittest.TestCase):
         self.assertEqual(days['2026-10-02'], 'past')
 
     def test_today_still_respects_capacity_and_closure(self):
-        rows = [{'booking_date': '2026-10-03', 'party_size': 42, 'tables': ','.join(TABLES)}]
+        rows = filled_tables(day='2026-10-03')
         self.assertEqual(self.run_calendar(2, rows, now=datetime(2026, 10, 3, 23, 59, tzinfo=TZ))['2026-10-03'], 'full')
         self.assertEqual(self.run_calendar(2, now=datetime(2026, 10, 5, 12, tzinfo=TZ))['2026-10-05'], 'closed')
 

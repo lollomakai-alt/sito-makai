@@ -7,6 +7,7 @@ from database import db
 from .dates import now_local, _parse
 from .validators import normalize_email, normalize_phone, normalize_booking_name, _validate
 from .tables import _find_tables, _alternatives
+from .occupancy import valid_assignment
 
 MARKETING_CONSENT_TEXT = (
     "Ti va di ricevere di tanto in tanto su WhatsApp offerte, sconti speciali, "
@@ -112,7 +113,7 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
         # not create a second booking when the client retries its signed request.
         if request_started_at is not None:
             previous = c.execute(
-                "SELECT id, name, booking_date, booking_time, party_size, status FROM bookings "
+                "SELECT id, name, booking_date, booking_time, party_size, status, tables FROM bookings "
                 "WHERE name=%s AND email=%s AND phone=%s AND booking_date=%s "
                 "AND booking_time=%s AND party_size=%s AND notes=%s "
                 "AND created_at >= to_timestamp(%s) ORDER BY id LIMIT 1",
@@ -122,6 +123,9 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
                 if previous["status"] != "confirmed":
                     return {"ok": False, "code": "cancelled", "error":
                             "Questa richiesta è stata annullata. Contatta il locale per riprenotare."}
+                if not valid_assignment(previous.get("tables"), previous["party_size"]):
+                    return {"ok": False, "code": "table_unassigned", "error":
+                            "Prenotazione esistente con TAVOLO DA ASSEGNARE. Contatta il locale."}
                 return {"ok": True, "booking_id": previous["id"], "name": previous["name"],
                         "date": previous["booking_date"], "time": previous["booking_time"],
                         "party_size": previous["party_size"]}
@@ -132,7 +136,7 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
             return {"ok": False, "code": "phone_limit", "error":
                     f"Questo telefono ha già {MAX_ACTIVE_PER_PHONE} prenotazioni attive. Per altre chiamaci."}
         assigned = _find_tables(c, dt, party_size)
-        if not assigned:
+        if not assigned or not valid_assignment(",".join(assigned), party_size):
             return {"ok": False, "error": "Non c'è più posto a quell'orario.",
                     "alternative_times": _alternatives(c, dt, party_size)}
         cur = c.execute(
@@ -180,7 +184,7 @@ def create_admin_booking(name: str, phone: str, date: str, time: str,
             return {"ok": False, "code": "phone_limit", "error":
                     f"Questo telefono ha già {MAX_ACTIVE_PER_PHONE} prenotazioni attive."}
         assigned = _find_tables(c, dt, party_size)
-        if not assigned:
+        if not assigned or not valid_assignment(",".join(assigned), party_size):
             return {"ok": False, "error": "Non c'è più posto a quell'orario.",
                     "alternative_times": _alternatives(c, dt, party_size)}
 
@@ -241,7 +245,7 @@ def modify_booking(booking_id: int, email: str, date: str, time: str, party_size
         if not row:
             return {"ok": False, "error": "Prenotazione non trovata per questa email."}
         assigned = _find_tables(c, dt, party_size, exclude_id=booking_id)
-        if not assigned:
+        if not assigned or not valid_assignment(",".join(assigned), party_size):
             return {
                 "ok": False,
                 "error": "Non c'è posto a quell'orario.",
@@ -294,7 +298,11 @@ def list_day(date_str: str):
             ") mc ON true WHERE b.booking_date=%s ORDER BY b.booking_time",
             (date_str,),
         ).fetchall()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    for booking in result:
+        missing = booking["status"] == "confirmed" and not (booking["tables"] or "").strip()
+        booking["table_assignment_warning"] = "TAVOLO DA ASSEGNARE" if missing else None
+    return result
 
 
 def register_marketing_consent(booking_id: int, channel: str, response_text: str,

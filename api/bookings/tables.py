@@ -62,17 +62,25 @@ def _units():
 
 def _occupied_tables(c, dt: datetime, exclude_id=None) -> set:
     rows = c.execute(
-        "SELECT id, booking_date, booking_time, tables FROM bookings "
+        "SELECT id, booking_date, booking_time, party_size, tables FROM bookings "
         "WHERE booking_date=%s AND status='confirmed'",
         (dt.strftime("%Y-%m-%d"),),
     ).fetchall()
+    if not getattr(c, "reconstructed_occupancy", False):
+        from .occupancy import reconstruct, booking_datetime
+        snapshot, unresolved = reconstruct([r for r in rows if r["id"] != exclude_id])
+        for row in snapshot.rows:
+            other = booking_datetime(row)
+            if row["id"] in unresolved and (other is None or abs((other - dt).total_seconds()) < STAY_MINUTES * 60):
+                return set(TABLES)
+        rows = snapshot.rows
     busy = set()
     for r in rows:
         if exclude_id is not None and r["id"] == exclude_id:
             continue
-        other = _parse(r["booking_date"], r["booking_time"])
+        other = _parse(str(r["booking_date"]), str(r["booking_time"])[:5])
         if other and abs((other - dt).total_seconds()) < STAY_MINUTES * 60:
-            busy.update(t for t in r["tables"].split(",") if t)
+            busy.update(t.strip() for t in (r["tables"] or "").split(",") if t.strip())
     return busy
 
 
