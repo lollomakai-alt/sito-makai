@@ -3,7 +3,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 
 const mapsUrl = "https://www.google.com/maps/place//data=!4m2!3m1!1s0x132f602bc97659d1:0x91e31e79d05bc2c6?sa=X&ved=1t:8290&ictx=111";
 
-export default function ContactsSection({ onOpenChat }) {
+export default function ContactsSection() {
   const { language } = useLanguage();
   const copy = siteCopy[language].contacts;
 
@@ -42,9 +42,9 @@ export default function ContactsSection({ onOpenChat }) {
               <a href="mailto:makairoma@gmail.com">makairoma@gmail.com</a>
             </div>
           </address>
-          <button type="button" className="contacts-booking-button" onClick={onOpenChat}>
+          <a className="contacts-booking-button" href="/prenotazioni">
             {copy.booking}
-          </button>
+          </a>
           <div className="social-links" aria-label={copy.socialLabel}>
             <a href="https://wa.me/393397514140" target="_blank" rel="noreferrer">
               WhatsApp

@@ -55,69 +55,57 @@ def answer_event(message: str, context: Optional[Dict[str, Any]] = None, phone: 
     Il contesto viene aggiornato in-place perché la sessione firmata salva
     `context['event']` e i quick-replies derivano direttamente da quei campi.
     """
-    event_context = (context or {}).setdefault("event", {})
+    from chat_language import people_count
+
+    if context is None:
+        context = {}
+    event_context = context.setdefault("event", {})
     text = (message or "").lower().strip()
-    if not text:
-        return "Dimmi quale tipo di evento vuoi organizzare: aperitivo, cena / apericena o dopocena."
-
-    if re.search(r"\b(?:nuovo|riprendi|ricomincia|reset|annulla)\b", text):
+    if re.search(r"\b(?:nuovo|ricomincia|reset)\b", text):
         event_context.clear()
+        context.pop("people", None)
 
-    if re.search(r"\b(?:apericena|cena)\b", text) and "aperitivo" not in text:
-        event_context["category"] = "cena / apericena"
-        return (
-            "Per le cene e l'apericena possiamo organizzare un evento in ambiente Tiki. "
-            "Ti interessa un apericena o una cena più classica?"
-        )
+    count = people_count(text, bare=True)
+    if count is not None:
+        if count < 1:
+            return "Indica almeno una persona per il tuo evento."
+        event_context["people"] = count
 
-    if "aperitivo" in text:
-        event_context["category"] = "aperitivo"
-        return (
-            "Per l'aperitivo organizziamo serate con cocktail e spazi conviviali. "
-            "Per una stima precisa, dimmi quante persone ci saranno."
-        )
-
+    category = None
     if "dopocena" in text or "dopo cena" in text:
-        event_context["category"] = "dopo cena"
-        event_context.pop("package", None)
-        return (
-            "Per il dopocena proponiamo tre formule: Drink + torta, Drink + snack e Drink + prosecco. "
-            "Il servizio è disponibile dalle 22:30 alle 00:00 e chiude alle 02:00. "
-            f"prenotazioni automatiche solo per la cena; per il dopocena contatta il locale al {phone} per confermare."
-        )
+        category = "dopo cena"
+    elif "aperitivo" in text:
+        category = "aperitivo"
+    elif re.search(r"\b(?:apericena|cena)\b", text):
+        category = "cena / apericena"
+    if category:
+        if category != event_context.get("category"):
+            event_context.pop("package", None)
+        event_context["category"] = category
 
-    package_matches = {
-        "drink + torta": "Drink + torta",
-        "drink + snack": "Drink + snack",
-        "drink + prosecco": "Drink + prosecco",
-        "prosecco": "Drink + prosecco",
-        "torta": "Drink + torta",
-        "snack": "Drink + snack",
-    }
-    for recipe, label in package_matches.items():
-        if recipe in text:
-            event_context["package"] = label
+    if event_context.get("category") == "dopo cena":
+        for word, label in (("torta", "Drink + torta"), ("snack", "Drink + snack"), ("prosecco", "Drink + prosecco")):
+            if re.search(rf"\b{word}\b", text):
+                event_context["package"] = label
+                break
+        if not event_context.get("package"):
             return (
-                f"Ottimo: {label}. Per quante persone vuoi organizzare il servizio?"
+                "Per il dopocena proponiamo tre formule: Drink + torta, Drink + snack e Drink + prosecco. "
+                "Il servizio è disponibile dalle 22:30 alle 00:00 e chiude alle 02:00. "
+                f"Per organizzare il dopocena contatta il locale al {phone} per confermare. "
+                "Quale formula ti interessa?"
             )
 
-    people_match = re.search(r"\b(\d{1,2})\b", text)
-    if people_match and event_context.get("package"):
-        event_context["people"] = int(people_match.group(1))
-        return (
-            f"Perfetto, {int(people_match.group(1))} persone. Possiamo stilare un preventivo "
-            "e ti aiuteremo a scegliere il miglior pacchetto per la tua serata."
-        )
-
-    if re.search(r"\b(?:festa|eventi|evento|compleanno|laurea|pacchetti)\b", text):
-        return (
-            "Per gli eventi del Makai proponiamo: Aperitivo, Cena / apericena e Dopocena. "
-            "Se preferisci, ti posso aiutare a scegliere il formato giusto per la tua festa."
-        )
-
+    if not event_context.get("category"):
+        return "Per gli eventi proponiamo Aperitivo, Cena / apericena e Dopocena. Quale formato ti interessa?"
+    label = event_context.get("package") or event_context["category"]
+    if not event_context.get("people"):
+        return f"Hai scelto {label}. Per quante persone vuoi informazioni?"
     return (
-        "Per organizzare un evento al Makai puoi scegliere tra Aperitivo, Cena / apericena e Dopocena. "
-        "Dimmi il tipo di evento o il numero di ospiti e ti guidiamo nel pacchetto più adatto."
+        f"Per {event_context['people']} persone, formato {label}, "
+        f"contatta il locale al {phone} per disponibilità e un preventivo personalizzato. "
+        "Queste sono informazioni: non è stata registrata una prenotazione. "
+        "Puoi chiedermi anche menu, cocktail o indicazioni per arrivare."
     )
 
 
@@ -183,8 +171,8 @@ def process_event_message(user_message: str, session: Dict[str, Any]) -> Dict[st
                 return {
                     "reply": f"Riepilogo preventivo per {count} persone ({event_type.capitalize()}):\n"
                              f"Totale stimato: €{total}.\n\n"
-                             f"Vuoi procedere con la prenotazione o ricevere maggiori dettagli?",
-                    "quick_replies": ["Vorrei prenotare un tavolo", "Calcola un nuovo preventivo"],
+                             f"Vuoi ricevere maggiori dettagli? Per organizzare la serata contatta il locale.",
+                    "quick_replies": ["Quali sono i contatti?", "Calcola un nuovo preventivo"],
                     "is_event_completed": True
                 }
         

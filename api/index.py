@@ -8,7 +8,7 @@ from collections import defaultdict, deque
 from contextlib import asynccontextmanager, suppress
 from typing import List, Literal, Optional
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -22,10 +22,11 @@ load_dotenv(API_DIR.parent / ".env")
 
 import bookings
 from bookings.calendar_summary import month_summary
+from bookings.public_availability import month_availability
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
-from config import MAX_PARTY_SIZE
+from config import MAX_PARTY_SIZE, LOCAL_PHONE, MAX_ADVANCE_DAYS
 from menu_data import get_menu_data
 
 logging.basicConfig(level=logging.INFO)
@@ -129,7 +130,6 @@ class ChatMessage(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     history: List[HistoryItem] = Field(default_factory=list, max_length=10)
     session_token: Optional[str] = Field(default=None, max_length=8192)
-    consenso_ricordami: bool = False
 
 
 class AdminBookingBody(BaseModel):
@@ -151,6 +151,25 @@ class MarketingConsentBody(BaseModel):
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "project": "Makai Grand Line Backend"}
+
+
+@app.get("/api/booking-settings")
+def booking_settings():
+    return {"max_party_size": MAX_PARTY_SIZE, "phone": LOCAL_PHONE, "max_advance_days": MAX_ADVANCE_DAYS}
+
+
+@app.get("/api/booking-availability")
+def public_booking_availability(request: Request, response: Response,
+                                month: str, party_size: int = Query(ge=1, le=MAX_PARTY_SIZE)):
+    check_rate_limit(request)
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return month_availability(month, party_size)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+    except Exception:
+        logger.warning("Disponibilità pubblica momentaneamente non disponibile.")
+        raise HTTPException(status_code=503, detail="Disponibilità non verificabile. Riprova più tardi.") from None
 
 
 @app.get("/api/menu")
@@ -177,7 +196,6 @@ def automatic_chat(body: ChatMessage, request: Request):
     return answer_chat(
         body.message,
         body.session_token,
-        consenso_ricordami=body.consenso_ricordami,
     )
 
 

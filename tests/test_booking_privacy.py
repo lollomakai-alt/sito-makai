@@ -134,25 +134,20 @@ class BookingPrivacyTests(unittest.TestCase):
             _handle(state, 'sì', lambda _: None)
         self.assertFalse(create.call_args.kwargs['consenso_ricordami'])
 
-    def test_checkbox_values_survive_the_automatic_chat_signed_session(self):
-        state = complete_state(step='consensi', context={})
-        token = _serializer().dumps(state)
-        result = answer_chat(
-            'continua',
-            token,
-            consenso_ricordami=True,
-        )
-        updated = _serializer().loads(result['session_token'])
-        self.assertTrue(updated['consenso_ricordami'])
-        self.assertEqual(updated['step'], 'conferma')
+    def test_old_consent_session_is_retired_without_writes(self):
+        token = _serializer().dumps(complete_state(step='consensi', context={}))
+        with patch('prenotazioni.create_booking') as create:
+            result = answer_chat('continua', token)
+        create.assert_not_called()
+        self.assertIsNone(result['session_token'])
+        self.assertNotIn('show_booking_consents', result)
+        self.assertIn('/prenotazioni', result['reply'])
 
-    def test_frontend_is_told_to_show_consent_checkboxes_before_summary(self):
-        state = complete_state(step='note', context={})
-        token = _serializer().dumps(state)
+    def test_old_notes_session_no_longer_asks_for_consent(self):
+        token = _serializer().dumps(complete_state(step='note', context={}))
         result = answer_chat('nessuna', token)
-        updated = _serializer().loads(result['session_token'])
-        self.assertEqual(updated['step'], 'consensi')
-        self.assertTrue(result['show_booking_consents'])
+        self.assertIsNone(result['session_token'])
+        self.assertNotIn('show_booking_consents', result)
 
     def test_insert_saves_utc_consent_timestamp_and_leaves_expiry_to_trigger(self):
         connection = FakeConnection()

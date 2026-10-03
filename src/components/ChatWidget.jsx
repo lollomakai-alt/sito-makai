@@ -3,14 +3,13 @@ import { useEffect, useRef, useState } from "react";
 const launcherMessages = [
   "Clicca qui",
   "Info",
-  "Prenota",
   "Menu",
   "Cocktail",
 ];
 
 const welcomeMessages = [
   "Arrr, benvenuto a bordo. Sono la vedetta digitale del Makai: quale rotta scegli?",
-  "Ahoy, Capitano! La ciurma è pronta. Chiedimi di menu, cocktail, eventi o prenotazioni.",
+  "Ahoy, Capitano! La ciurma è pronta. Chiedimi di menu, cocktail, eventi e informazioni sul locale.",
   "Benvenuto sulla nave del Makai. Dimmi la destinazione e tracciamo la rotta.",
   "Il timone è tuo, pirata. Posso guidarti tra informazioni sul locale, menu ed eventi.",
   "Ciurma pronta, cannoni spenti, chatbot acceso. Che si combina?",
@@ -74,7 +73,6 @@ const quickQuestionGroups = [
   {
     id: "eventi",
     questions: [
-      "Vorrei prenotare un tavolo.",
       "Posso organizzare un compleanno?",
       "Quali pacchetti festa proponete?",
       "Fate apericena per gli eventi?",
@@ -111,7 +109,7 @@ function createContextualQuickQuestions(replies) {
   }));
 }
 
-const botLinkPattern = /(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140|Informativa|\/privacy)/g;
+const botLinkPattern = /(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140|Informativa|\/privacy|\/prenotazioni)/g;
 const singlePhonePattern = /^(\+39\s?339\s?751\s?4140|339\s?751\s?4140|\+393397514140)$/;
 
 function renderMessage(text, sender) {
@@ -122,6 +120,9 @@ function renderMessage(text, sender) {
     if (singlePhonePattern.test(part)) {
       const phone = part.replace(/\s/g, "");
       return <a key={`${part}-${index}`} href={`tel:${phone}`} className="chat-phone-link">{part}</a>;
+    }
+    if (part === "/prenotazioni") {
+      return <a key={`booking-${index}`} className="chat-link" href="/prenotazioni">Pagina prenotazioni</a>;
     }
     if (isPrivacyMessage && (part === "Informativa" || part === "/privacy")) {
       return (
@@ -134,25 +135,27 @@ function renderMessage(text, sender) {
   });
 }
 
-export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClose }) {
+export default function ChatWidget({ isOpen, onOpen, onClose }) {
   const [launcherIndex, setLauncherIndex] = useState(0);
   const [launcherPaused, setLauncherPaused] = useState(false);
   const [messages, setMessages] = useState(() => [createInitialMessage()]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showBookingConsents, setShowBookingConsents] = useState(false);
-  const [consensoRicordami, setConsensoRicordami] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(thinkingMessages[0]);
   const [quickQuestions, setQuickQuestions] = useState(() => createQuickQuestions());
   
-  // 🔄 Stato per tracciare se il preventivo/evento precedente è stato completato
-  const [isEventCompleted, setIsEventCompleted] = useState(false);
+
+  const visibleQuestions = [
+    ...quickQuestions,
+    ...quickQuestionGroups
+      .filter((group) => !quickQuestions.some((question) => question.groupId === group.id || question.text === group.questions[0]))
+      .map((group) => ({ groupId: group.id, questionIndex: 0, text: group.questions[0] })),
+  ].slice(0, 4);
 
   const messagesEndRef = useRef(null);
   const sessionTokenRef = useRef(null);
   const sendingRef = useRef(false);
   const wasOpenRef = useRef(isOpen);
-  const bookingStartHandledRef = useRef(false);
 
   useEffect(() => {
     if (isOpen || launcherPaused) return;
@@ -174,26 +177,11 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
-      bookingStartHandledRef.current = false;
-      return;
-    }
-    if (!startBooking || bookingStartHandledRef.current || sendingRef.current) return;
-
-    bookingStartHandledRef.current = true;
-    sessionTokenRef.current = null;
-    setShowBookingConsents(false);
-    setIsEventCompleted(false);
-    sendMessage("Vorrei prenotare un tavolo.", { showUserMessage: false });
-  }, [isOpen, startBooking, isLoading]);
-
-  useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [isOpen, messages, isLoading]);
 
   async function sendMessage(text, options = {}) {
     const {
-      consensoRicordami = false,
       showUserMessage = true,
     } = options;
     const cleanText = text.trim();
@@ -208,14 +196,16 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
     setLoadingMessage(randomMessage(thinkingMessages));
     setIsLoading(true);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: cleanText,
           session_token: sessionTokenRef.current,
-          consenso_ricordami: consensoRicordami,
         }),
       });
 
@@ -223,38 +213,12 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
       const data = await response.json();
       if (typeof data.reply !== "string") throw new Error("Risposta chat non valida");
       sessionTokenRef.current = data.session_token ?? null;
-      setShowBookingConsents(Boolean(data.show_booking_consents));
-      if (data.show_booking_consents) {
-        setConsensoRicordami(false);
-      }
-
-      // 🔄 Rileva se la logica evento è stata completata
-      const lowerReply = data.reply.toLowerCase();
-      if (
-        data.is_event_completed ||
-        lowerReply.includes("totale") ||
-        lowerReply.includes("preventivo") ||
-        lowerReply.includes("riepilogo")
-      ) {
-        setIsEventCompleted(true);
-      }
-
-      if (Array.isArray(data.quick_replies)) {
-        const replies = data.quick_replies.filter((reply) => typeof reply === "string" && reply.trim());
-        if (replies.length > 0) {
-          setQuickQuestions(createContextualQuickQuestions(replies));
-        } else {
-          setQuickQuestions((current) => {
-            const hasContextual = current.some((question) => question.contextual);
-            return hasContextual ? current : createQuickQuestions(current);
-          });
-        }
-      } else {
-        setQuickQuestions((current) => {
-          const hasContextual = current.some((question) => question.contextual);
-          return hasContextual ? current : createQuickQuestions(current);
-        });
-      }
+      const replies = Array.isArray(data.quick_replies)
+        ? data.quick_replies.filter((reply) => typeof reply === "string" && reply.trim())
+        : [];
+      setQuickQuestions((current) => replies.length
+        ? createContextualQuickQuestions(replies)
+        : createQuickQuestions(current));
 
       setMessages((current) => [
         ...current,
@@ -270,6 +234,7 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
         },
       ]);
     } finally {
+      window.clearTimeout(timeout);
       sendingRef.current = false;
       setIsLoading(false);
     }
@@ -277,36 +242,11 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
 
   function handleSubmit(event) {
     event.preventDefault();
-    const cleanText = input.trim().toLowerCase();
-
-    // 🔄 Reset sessione se un evento precedente era completato e l'utente ne richiede uno nuovo da input testo
-    if (isEventCompleted && (cleanText.includes("evento") || cleanText.includes("festa") || cleanText.includes("preventivo") || cleanText.includes("prenotare"))) {
-      sessionTokenRef.current = null;
-      setShowBookingConsents(false);
-      setIsEventCompleted(false);
-    }
-
     sendMessage(input);
   }
 
   function handleQuickQuestion(selectedQuestion) {
     if (sendingRef.current) return;
-
-    const lowerText = selectedQuestion.text.toLowerCase();
-    const isEventQuestion =
-      selectedQuestion.groupId === "eventi" ||
-      lowerText.includes("festa") ||
-      lowerText.includes("evento") ||
-      lowerText.includes("preventivo") ||
-      lowerText.includes("compleanno") ||
-      lowerText.includes("apericena");
-
-    // 🔄 RESET: Azzera il contesto solo se la logica evento precedente era stata completata
-    if (isEventQuestion && isEventCompleted) {
-      sessionTokenRef.current = null;
-      setShowBookingConsents(false);
-      setIsEventCompleted(false);
-    }
 
     if (selectedQuestion.contextual) {
       sendMessage(selectedQuestion.text);
@@ -325,14 +265,6 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
         text: group.questions[questionIndex],
       };
     }));
-  }
-
-  function handleConsentSubmit(event) {
-    event.preventDefault();
-    sendMessage("continua", {
-      consensoRicordami,
-      showUserMessage: false,
-    });
   }
 
   return (
@@ -374,49 +306,29 @@ export default function ChatWidget({ isOpen, startBooking = false, onOpen, onClo
             {isLoading && <div className="message bot chat-loading">{loadingMessage}</div>}
             <div ref={messagesEndRef} />
           </div>
-          {showBookingConsents ? (
-            <form className="chat-consent-form" onSubmit={handleConsentSubmit}>
-              <label className="chat-consent-option">
-                <input
-                  type="checkbox"
-                  checked={consensoRicordami}
-                  onChange={(event) => setConsensoRicordami(event.target.checked)}
-                  disabled={isLoading}
-                />
-                <span>Ricordami per sconti e offerte</span>
-              </label>
-              <p className="chat-consent-privacy">
-                <a className="chat-link" href="/privacy" target="_blank" rel="noopener noreferrer">
-                  /privacy
-                </a>
-              </p>
-              <button className="chat-consent-submit" type="submit" disabled={isLoading}>
-                Continua al riepilogo
+          <div className="chat-quick-questions">
+            <button type="button" onClick={() => sendMessage("Cambia argomento")} disabled={isLoading}>
+              Cambia argomento
+            </button>
+            {visibleQuestions.map((question) => (
+              <button key={question.groupId} type="button" onClick={() => handleQuickQuestion(question)} disabled={isLoading}>
+                {question.text}
               </button>
-            </form>
-          ) : (
-            <>
-              <div className="chat-quick-questions">
-                {quickQuestions.map((question) => (
-                  <button key={question.groupId} type="button" onClick={() => handleQuickQuestion(question)} disabled={isLoading}>
-                    {question.text}
-                  </button>
-                ))}
-              </div>
-              <form className="chat-input-area" onSubmit={handleSubmit}>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  placeholder="Chiedi al capitano..."
-                  maxLength="500"
-                  disabled={isLoading}
-                  aria-label="Scrivi un messaggio"
-                />
-                <button className="send-btn" type="submit" disabled={isLoading || !input.trim()} aria-label="Invia messaggio">➤</button>
-              </form>
-            </>
-          )}
+            ))}
+            <a className="chat-booking-link" href="/prenotazioni">Prenota</a>
+          </div>
+          <form className="chat-input-area" onSubmit={handleSubmit}>
+            <input
+              type="text"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Chiedi al capitano..."
+              maxLength="500"
+              disabled={isLoading}
+              aria-label="Scrivi un messaggio"
+            />
+            <button className="send-btn" type="submit" disabled={isLoading || !input.trim()} aria-label="Invia messaggio">➤</button>
+          </form>
         </div>
       )}
     </>

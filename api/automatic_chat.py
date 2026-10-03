@@ -1,20 +1,16 @@
 import re
 import unicodedata
-from datetime import datetime, timedelta
 from typing import Iterable, Optional
 
-from bookings.dates import now_local
 from config import (
     AFTER_DINNER_RESERVATION_END,
     AFTER_DINNER_RESERVATION_START,
-    CLOSED_WEEKDAYS,
-    MAX_ADVANCE_DAYS,
     SLOT_END,
     SLOT_START,
     VENUE_CLOSE_TIME,
 )
 from menu_data import get_menu_data
-from prenotazioni import answer_booking, _serializer, _reply, SESSION_SECONDS, QUESTIONS, PHONE
+from prenotazioni import _serializer, _reply, SESSION_SECONDS, PHONE
 from itsdangerous import BadSignature
 from chat_language import understand, intent, people_count, dietary_preferences
 from chat_events import answer_event
@@ -29,7 +25,7 @@ CONTACTS = {
 
 OPENING_HOURS = (
     f"Lunedì chiuso. Da martedì a domenica il locale chiude alle {VENUE_CLOSE_TIME}. "
-    f"La chat accetta prenotazioni per la cena dalle {SLOT_START} alle {SLOT_END}. "
+    f"Per la cena gli orari sono dalle {SLOT_START} alle {SLOT_END}. "
     f"Per prenotare il dopocena, disponibile dalle {AFTER_DINNER_RESERVATION_START} "
     f"alle {AFTER_DINNER_RESERVATION_END}, chiama il locale al {CONTACTS['phone']}. "
     "La cucina è aperta fino alle 23:30."
@@ -46,7 +42,7 @@ LOCAL_INTRO = (
     "dove l'anima polinesiana incontra l'avventura piratesca ispirata a One Piece. "
     "A bordo trovi cocktail Tiki serviti in mug scenografici, cucina fusion, musica dal vivo "
     "e uno spazio per compleanni, lauree e feste. "
-    f"Il nostro approdo è in {CONTACTS['address']}. Vuoi conoscere menu, cocktail, orari, eventi o prenotazioni?"
+    f"Il nostro approdo è in {CONTACTS['address']}. Vuoi conoscere menu, cocktail, orari ed eventi?"
 )
 
 PIRATE_OPENERS = (
@@ -58,43 +54,15 @@ PIRATE_OPENERS = (
 )
 
 
-def _booking_date_replies():
-    today = now_local().date()
-    replies = []
-    for offset in range(1, MAX_ADVANCE_DAYS + 1):
-        candidate = today + timedelta(days=offset)
-        if candidate.weekday() in CLOSED_WEEKDAYS:
-            continue
-        replies.append("Domani" if offset == 1 else candidate.strftime("%d/%m/%Y"))
-        if len(replies) == 4:
-            break
-    return replies
-
-
-def _booking_time_replies():
-    current = datetime.strptime(SLOT_START, "%H:%M")
-    end = datetime.strptime(SLOT_END, "%H:%M")
-    replies = []
-    while current <= end and len(replies) < 4:
-        replies.append(current.strftime("%H:%M"))
-        current += timedelta(minutes=90)
-    return replies
+BOOKING_REDIRECT = (
+    "La chat si occupa solo di informazioni e non registra prenotazioni. "
+    "Trovi la pagina dedicata qui: /prenotazioni. "
+    f"Al momento le prenotazioni online non sono ancora attive: per prenotare, modificare "
+    f"o annullare un tavolo e verificare la disponibilità chiama il {PHONE}."
+)
 
 
 def _contextual_quick_replies(outgoing, context):
-    step = outgoing.get("step")
-    if step != "assistente":
-        booking_replies = {
-            "persone": ["2 persone", "3 persone", "4 persone", "5 persone"],
-            "data": _booking_date_replies(),
-            "ora": _booking_time_replies(),
-            "email_confermata": ["Sì, confermo", "Cambia email"],
-            "note": ["Nessuna nota"],
-            "conferma": ["Sì, confermo", "No"],
-            "correggi": ["Cambia persone", "Cambia giorno", "Cambia ora", "Annulla"],
-        }
-        return booking_replies.get(step, [])
-
     if context.get("intent") == "event":
         event = context.get("event", {})
         if event.get("awaiting_bottles"):
@@ -103,12 +71,13 @@ def _contextual_quick_replies(outgoing, context):
             return ["Aperitivo", "Cena / apericena", "Dopocena"]
         if event.get("category") == "dopo cena" and not event.get("package"):
             return ["Drink + torta", "Drink + snack", "Drink + prosecco"]
-        if event.get("package") and not event.get("people"):
+        if event.get("category") and not event.get("people"):
             return ["10 persone", "15 persone", "20 persone", "30 persone"]
+        return ["Quali sono i contatti?", "Consigliami un cocktail", "Nuovo evento"]
 
     if context.get("people") and not context.get("intent"):
-        return ["Prenota un tavolo", "Informazioni per una festa"]
-    return None
+        return ["Informazioni sul locale", "Informazioni per una festa"]
+    return []
 
 # Per le condizioni non documentate, il bot rimanda alla verifica con il locale.
 FAQ = {
@@ -190,7 +159,7 @@ def _info(message_or_text: str, context=None):
         return LOCAL_INTRO
 
     if len(text.split()) <= 3 and _contains_any(text, ("ciao", "salve", "buonasera", "buongiorno", "aloha")):
-        return "Posso aiutarti con menu, cocktail, contatti, indicazioni, eventi e prenotazioni. Quale rotta scegli?"
+        return "Posso aiutarti con menu, cocktail, contatti, indicazioni ed eventi. Quale rotta scegli?"
 
     if _contains_any(text, ("come stai", "tutto bene", "come va")):
         return "Vento favorevole, vele spiegate e nessun ammutinamento all'orizzonte. E tu?"
@@ -267,20 +236,29 @@ def answer_message(message: str, session_id: str) -> str:
     return result["reply"] if isinstance(result, dict) else str(result)
 
 
-def answer_chat(message: str, session_token: Optional[str],
-                consenso_ricordami: bool = False):
-    """Unica sessione firmata per informazioni, preferenze e prenotazioni."""
+def answer_chat(message: str, session_token: Optional[str]):
+    """Sessione informativa: non avvia o riprende prenotazioni."""
     state = None
     if session_token:
         try:
             state = _serializer().loads(session_token, max_age=SESSION_SECONDS)
-            if not isinstance(state, dict) or state.get("step") not in (*QUESTIONS, "assistente"):
+            if not isinstance(state, dict) or not isinstance(state.get("step"), str):
                 raise BadSignature("Invalid chat state")
         except (BadSignature, RuntimeError):
-            return {"reply": _pirate_reply("La conversazione è scaduta o non è valida. Ricominciamo; se avevi già confermato un tavolo, contatta il locale prima di riprenotare."), "session_token": None}
+            # Information requests can proceed with a fresh context after expiry.
+            state = None
+    # Retire old booking sessions before processing any confirmation or personal data.
+    if state and state.get("step") != "assistente":
+        return {"reply": _pirate_reply(BOOKING_REDIRECT), "session_token": None,
+                "quick_replies": ["Informazioni sul locale", "Quali sono gli orari?"]}
     context = dict((state or {}).get("context", {}))
+    context.pop("booking_draft", None)
+    if context.get("intent") == "booking":
+        context.pop("intent", None)
     text = understand(message)
     topic = intent(text)
+    if topic is not None:
+        context.pop("unrecognised_count", None)
     preferences = dietary_preferences(text)
     if preferences:
         context["preferences"] = sorted(set(context.get("preferences", []) + preferences))
@@ -290,9 +268,8 @@ def answer_chat(message: str, session_token: Optional[str],
     if count is not None:
         context["people"] = count
 
-    def respond(reply, booking_state=None):
-        outgoing = dict(booking_state or {"step": "assistente"})
-        show_booking_consents = outgoing.get("step") == "consensi"
+    def respond(reply):
+        outgoing = {"step": "assistente"}
         quick_replies = _contextual_quick_replies(outgoing, context)
         reply_count = int(context.get("reply_count", 0))
         reply = _pirate_reply(reply, reply_count)
@@ -300,8 +277,6 @@ def answer_chat(message: str, session_token: Optional[str],
         outgoing["context"] = context
         try:
             response = _reply(reply, outgoing)
-            if show_booking_consents:
-                response["show_booking_consents"] = True
             if quick_replies is not None:
                 response["quick_replies"] = quick_replies
             return response
@@ -312,19 +287,17 @@ def answer_chat(message: str, session_token: Optional[str],
                 response["quick_replies"] = quick_replies
             return response
 
-    booking_active = state and state.get("step") != "assistente"
-    booking_correction = booking_active and re.search(r"\b(?:cambia|correggi|modifica)\b", text)
-    booking_email_input = (
-        booking_active
-        and state.get("step") in ("email", "email_confermata")
-        and "@" in message
-    )
-    if topic == "info" and not booking_correction and not booking_email_input:
+    if re.fullmatch(r"(?:ricomincia|reset|annulla|basta|stop|cambiamo argomento|cambia argomento)[.!? ]*", text):
+        context.clear()
+        return respond("Va bene, cambiamo rotta. Vuoi informazioni su menu, cocktail, orari o eventi?")
+    if topic in ("booking", "availability"):
+        context.pop("intent", None)
+        return respond(BOOKING_REDIRECT)
+    if topic == "info":
         reply = _info(text)
         if reply:
-            if booking_active:
-                reply += "\n\nPer continuare la prenotazione: " + QUESTIONS[state["step"]]
-            return respond(reply, state if booking_active else None)
+            context["intent"] = "info"
+            return respond(reply)
     # Un vecchio topic evento vale solo quando il messaggio corrente non esprime
     # già un nuovo intento. Così una richiesta esplicita di menu o drink cambia rotta,
     # ma un passaggio dell'evento (pacchetto o numero ospiti) resta nel flusso evento.
@@ -332,58 +305,38 @@ def answer_chat(message: str, session_token: Optional[str],
     continuing_event_package = (
         context.get("intent") == "event"
         and event_context.get("category") == "dopo cena"
-        and re.search(r"\b(?:drink\s*\+\s*(?:torta|snack|prosecco)|torta|snack|prosecco)\b", text)
+        and re.fullmatch(r"(?:drink\s*\+\s*)?(?:torta|snack|prosecco)[.!? ]*", text)
     )
     event_continuation = (
         context.get("intent") == "event"
-        and (topic is None or continuing_event_package or count is not None)
+        and (continuing_event_package or (topic is None and count is not None))
     )
     if topic == "event" or event_continuation or continuing_event_package:
-        if booking_active:
-            context["booking_draft"] = {k: v for k, v in state.items() if k != "context"}
         context["intent"] = "event"
         if "people" in context and "people" not in context.setdefault("event", {}):
             context["event"]["people"] = context["people"]
         return respond(answer_event(text, context, PHONE))
 
-    dietary_note = (booking_active and state["step"] == "note" and preferences
-                    and "?" not in text and not re.search(r"posso|cosa|quali|consigl|avete", text))
-    # Informational detours never consume a name/phone or authorize a write.
-    if not dietary_note and (topic in ("menu", "cocktail") or (not booking_active and topic is None and context.get("intent") in ("menu", "cocktail") and
-            re.search(r"consigl|altro|alternativa|dolce|fruttato|tropicale|fresco|secco|forte|disponibili", text))):
+    if topic in ("menu", "cocktail") or (topic is None and context.get("intent") in ("menu", "cocktail") and
+            re.search(r"consigl|altro|alternativa|dolce|fruttato|tropicale|fresco|secco|forte|disponibili", text)):
         context["intent"] = topic or context["intent"]
-        reply = answer_menu(text, context, get_menu_data, PHONE)
-        if booking_active:
-            reply += "\n\nPer continuare la prenotazione: " + QUESTIONS[state["step"]]
-        return respond(reply, state if booking_active else None)
-
-    if topic in ("booking", "availability") or booking_active:
-        context["intent"] = "booking"
-        token = session_token if booking_active else None
-        if not booking_active and re.search(r"riprend|continua", text) and context.get("booking_draft"):
-            token = _serializer().dumps(context.pop("booking_draft"))
-        booking_message = message
-        if not token and "people" in context and people_count(text) is None:
-            booking_message += f" per {context['people']} persone"
-        result = answer_booking(
-            booking_message,
-            token,
-            _info,
-            consenso_ricordami=consenso_ricordami,
-        )
-        if result is not None:
-            if result.get("session_token"):
-                booking = _serializer().loads(result["session_token"], max_age=SESSION_SECONDS)
-                return respond(result["reply"], booking)
-            return respond(result["reply"])
+        return respond(answer_menu(text, context, get_menu_data, PHONE))
 
     if count is not None:
         if count > 40:
-            return respond(f"Per {count} persone la richiesta va valutata direttamente con il locale al {PHONE}. Non posso prenotare automaticamente; per eventi oltre 40 persone serve una valutazione in struttura.")
+            return respond(f"Per {count} persone la richiesta va valutata direttamente con il locale al {PHONE}. Per eventi oltre 40 persone serve una valutazione in struttura.")
         if count > 6:
-            return respond(f"Per {count} persone contattaci direttamente al {PHONE}: le prenotazioni automatiche sono fino a 6 persone. Se si tratta di una festa posso spiegarti i pacchetti.")
-        return respond(f"Siete in {count}: cerchi un tavolo oppure informazioni per una festa?")
+            return respond(f"Per {count} persone contattaci direttamente al {PHONE}. Se si tratta di una festa posso spiegarti i pacchetti.")
+        return respond(f"Siete in {count}: vuoi informazioni sul locale o sui pacchetti festa?")
     reply = _info(text, context)
     if reply:
+        context["intent"] = "info"
         return respond(reply)
-    return respond("Posso aiutarti con una prenotazione, con menu e cocktail oppure con feste ed eventi. Cosa ti interessa?")
+    # An unrecognised answer must not keep offering the previous flow's choices.
+    context.pop("intent", None)
+    context.pop("people", None)
+    misses = context.get("unrecognised_count", 0) + 1
+    context["unrecognised_count"] = misses
+    if misses > 1:
+        return respond(f"Non riesco a capire questa richiesta. Puoi scegliere una domanda suggerita qui sotto oppure contattare il locale al {PHONE}.")
+    return respond("Non ho capito a quale informazione ti riferisci. Puoi chiedermi menu, cocktail, orari, indicazioni o eventi.")

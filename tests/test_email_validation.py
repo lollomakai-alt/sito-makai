@@ -44,7 +44,7 @@ class EmailValidationTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIsNone(normalize_email(value))
 
-    def test_chat_asks_to_confirm_the_normalized_email(self):
+    def test_chat_no_longer_collects_booking_email(self):
         token = _serializer().dumps({
             "mode": "booking",
             "step": "email",
@@ -59,38 +59,10 @@ class EmailValidationTests(unittest.TestCase):
             "context": {"intent": "booking"},
         })
 
-        rejected = answer_chat("marco gmail@gmail.com", token)
-        self.assertIn("senza spazi o altre parole", rejected["reply"])
-        rejected_state = _serializer().loads(rejected["session_token"])
-        self.assertEqual(rejected_state["step"], "email")
-        self.assertNotIn("email", rejected_state)
-
-        confirmation = answer_chat("  MarioRossi@GMAIL.COM  ", rejected["session_token"])
-        self.assertIn("mariorossi@gmail.com", confirmation["reply"])
-        self.assertEqual(
-            confirmation["quick_replies"],
-            ["Sì, confermo", "Cambia email"],
-        )
-
-        invalid_correction = answer_chat("marco gmail@gmail.com", confirmation["session_token"])
-        self.assertIn("senza spazi o altre parole", invalid_correction["reply"])
-        correction_state = _serializer().loads(invalid_correction["session_token"])
-        self.assertEqual(correction_state["email"], "mariorossi@gmail.com")
-        self.assertNotIn("email_confermata", correction_state)
-
-        change = answer_chat("Cambia email", confirmation["session_token"])
-        self.assertIn("Una email di riferimento", change["reply"])
-
-        corrected = answer_chat("NUOVOINDIRIZZO@TISCALI.IT", change["session_token"])
-        self.assertIn("nuovoindirizzo@tiscali.it", corrected["reply"])
-        self.assertEqual(
-            corrected["quick_replies"],
-            ["Sì, confermo", "Cambia email"],
-        )
-
-        notes = answer_chat("Sì, confermo", corrected["session_token"])
-        self.assertIn("richieste particolari", notes["reply"])
-        self.assertEqual(notes["quick_replies"], ["Nessuna nota"])
+        result = answer_chat("MarioRossi@GMAIL.COM", token)
+        self.assertIsNone(result["session_token"])
+        self.assertIn("/prenotazioni", result["reply"])
+        self.assertNotIn("mariorossi", result["reply"].lower())
 
 
 if __name__ == "__main__":

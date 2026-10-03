@@ -110,6 +110,7 @@
 }
 
 .contacts-booking-button {
+  text-decoration: none;
   justify-self: center;
   min-width: 190px;
   padding: 14px 28px;

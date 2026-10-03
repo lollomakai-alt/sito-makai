@@ -318,3 +318,24 @@
     gap: 7px;
   }
 }
+
+.chat-quick-questions .chat-booking-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px;
+  border: 1px solid #ffe397;
+  border-radius: 8px;
+  color: #21140b;
+  background: #e8c45c;
+  font: 700 .85rem Georgia, 'Times New Roman', serif;
+  text-decoration: none;
+  box-shadow: 0 0 12px rgba(232, 196, 92, .45);
+}
+.chat-quick-questions .chat-booking-link:hover,
+.chat-quick-questions .chat-booking-link:focus-visible {
+  background: #ffe397;
+  box-shadow: 0 0 18px rgba(232, 196, 92, .7);
+  outline: 2px solid #fff1bf;
+  outline-offset: 2px;
+}
