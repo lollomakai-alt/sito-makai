@@ -12,5 +12,29 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "prenota.makaipigneto.it"
+        }
+      ],
+      "destination": "https://www.makaipigneto.it/prenotazioni",
+      "permanent": true
+    },
+    {
+      "source": "/prenotazioni",
+      "has": [
+        {
+          "type": "host",
+          "value": "prenota.makaipigneto.it"
+        }
+      ],
+      "destination": "https://www.makaipigneto.it/prenotazioni",
+      "permanent": true
+    }
   ]
 }
