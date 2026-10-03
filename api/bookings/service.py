@@ -129,6 +129,11 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
                 return {"ok": True, "booking_id": previous["id"], "name": previous["name"],
                         "date": previous["booking_date"], "time": previous["booking_time"],
                         "party_size": previous["party_size"]}
+        if c.execute(
+            "SELECT 1 FROM public.online_booking_closures WHERE booking_date::text=%s", (date,),
+        ).fetchone():
+            return {"ok": False, "code": "online_closed", "error":
+                    "Le prenotazioni online per questo giorno sono chiuse. Contatta il locale."}
         dt, err = _validate(date, time, party_size)
         if err:
             return {"ok": False, "error": err}

@@ -31,6 +31,11 @@ def month_availability(month: str, party_size: int):
             "WHERE booking_date >= %s AND booking_date <= %s AND status='confirmed'",
             (max(first, now.date()).isoformat(), min(last, horizon).isoformat()),
         ).fetchall()
+        closures = connection.execute(
+            "SELECT booking_date FROM public.online_booking_closures WHERE booking_date BETWEEN %s AND %s",
+            (first, last),
+        ).fetchall()
+    closed_online = {str(row["booking_date"]) for row in closures}
     occupied, covers, uncertain = {}, {}, set()
     grouped = {}
     for row in rows:
@@ -49,7 +54,7 @@ def month_availability(month: str, party_size: int):
             status = "past"
         elif day > horizon:
             status = "outside_window"
-        elif day.weekday() in CLOSED_WEEKDAYS:
+        elif day.weekday() in CLOSED_WEEKDAYS or key in closed_online:
             status = "closed"
         elif key in uncertain:
             status = "unverified"

@@ -20,24 +20,28 @@ def filled_tables(except_ids=(), day='2026-10-06'):
 
 
 class AvailabilityTests(unittest.TestCase):
-    def run_calendar(self, people, rows=(), now=None):
+    def run_calendar(self, people, rows=(), now=None, closures=()):
         statements = []
         class Connection:
             def execute(self, sql, args=None):
                 statements.append((sql, args))
                 return self
             def fetchall(self):
-                return list(rows)
+                return [{"booking_date": day} for day in closures] if "online_booking_closures" in statements[-1][0] else list(rows)
         @contextmanager
         def read_db():
             yield Connection()
         with patch('bookings.public_availability.db', read_db), patch('bookings.public_availability.now_local', return_value=now or datetime(2026, 10, 3, 12, tzinfo=TZ)):
             result = month_availability('2026-10', people)
         self.assertEqual(statements[0][0], 'SET TRANSACTION READ ONLY')
-        self.assertEqual(len(statements), 3)
+        self.assertEqual(len(statements), 4)
         self.assertIn("status='confirmed'", statements[2][0])
         self.assertNotIn('name', statements[2][0])
         return {day['date']: day['status'] for day in result['days']}
+
+    def test_online_closure_and_reopening(self):
+        self.assertEqual(self.run_calendar(2, closures=['2026-10-06'])['2026-10-06'], 'closed')
+        self.assertEqual(self.run_calendar(2)['2026-10-06'], 'available')
 
     def test_size_changes_availability_with_same_agenda(self):
         busy = [t for t in TABLES if t != '12']
