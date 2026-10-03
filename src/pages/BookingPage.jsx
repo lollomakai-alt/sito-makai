@@ -87,7 +87,7 @@ export default function BookingPage({ containerRef }) {
           <h1 className="section-title">{t("Un posto per te", "A place for you")}</h1>
           <p className="booking-subtitle-panel">{t("La tua prossima serata al Makai inizia qui. Scegli le persone e il giorno, poi lasciaci i tuoi contatti.", "Your next evening at Makai starts here. Choose your party size and date, then leave your contact details.")}</p>
         </header>
-        <form className="booking-layout" onChange={() => setReviewed(false)} onSubmit={(event) => { event.preventDefault(); setReviewed(true); }}>
+        <form className={`booking-layout${selected && currentAvailability && !loading ? "" : " booking-layout--single"}`} onChange={() => setReviewed(false)} onSubmit={(event) => { event.preventDefault(); setReviewed(true); }}>
           <div className="booking-card">
             <section aria-labelledby="booking-guests-title">
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
@@ -135,7 +135,7 @@ export default function BookingPage({ containerRef }) {
             <div className="booking-fields">
               <label className="booking-field">{t("Nome", "Name")} *<input name="name" autoComplete="given-name" required maxLength="80" placeholder={t("Come ti chiami?", "Your name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
-              <label className="booking-field">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="500" /></label>
+              <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="500" /></label>
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
             <label className="booking-check booking-privacy"><input type="checkbox" required name="privacy" /><span>{t("Ho letto l’", "I have read the ")}<a href="/privacy" target="_blank" rel="noopener noreferrer">{t("informativa privacy", "privacy policy")}</a> * <small>{t("(si apre in una nuova scheda)", "(opens in a new tab)")}</small></span></label>
