@@ -138,7 +138,7 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
         cur = c.execute(
             "INSERT INTO bookings (name, email, phone, booking_date, booking_time, party_size, notes, "
             "tables, status, source, reminder_status, consenso_ricordami, consenso_data) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','ai','skipped',%s,"
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','booking','skipped',%s,"
             "CASE WHEN %s THEN now() ELSE NULL END) RETURNING id",
             (name, p, ph, dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M"), party_size,
              notes, ",".join(assigned), consenso_ricordami, consenso_ricordami),
@@ -187,7 +187,7 @@ def create_admin_booking(name: str, phone: str, date: str, time: str,
         cur = c.execute(
             "INSERT INTO bookings (name, email, phone, booking_date, booking_time, party_size, notes, "
             "tables, status, source, reminder_status) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','staff','skipped') RETURNING id",
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','agenda','skipped') RETURNING id",
             (name, normalized_email, ph, dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M"),
              party_size, notes, ",".join(assigned)),
         )
@@ -311,7 +311,7 @@ def register_marketing_consent(booking_id: int, channel: str, response_text: str
     with db(write=True) as c:
         booking = c.execute(
             "SELECT id, name, email, phone, arrived_at, marketing_visit_counted_at FROM bookings "
-            "WHERE id=%s AND status='confirmed' AND source='staff'",
+            "WHERE id=%s AND status='confirmed' AND source='agenda'",
             (booking_id,),
         ).fetchone()
         if not booking:

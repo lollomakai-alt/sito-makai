@@ -10,6 +10,7 @@ from typing import List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -21,7 +22,7 @@ load_dotenv(API_DIR.parent / ".env")
 
 import bookings
 from bookings.calendar_summary import month_summary
-from admin_auth import router as auth_router, require_admin, require_browser_action
+from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
 from config import MAX_PARTY_SIZE
@@ -59,10 +60,16 @@ app.include_router(auth_router)
 
 @app.middleware("http")
 async def private_admin_responses(request: Request, call_next):
+    if request.url.path == "/api/admin" or request.url.path.startswith("/api/admin/"):
+        try:
+            require_agenda_gateway(request)
+        except HTTPException as error:
+            return JSONResponse(status_code=error.status_code, content={"detail": error.detail},
+                                headers={"Cache-Control": "no-store", "Vary": "Authorization"})
     response = await call_next(request)
     if request.url.path.startswith("/api/admin/") or request.url.path == "/api/chat":
         response.headers["Cache-Control"] = "no-store"
-        response.headers["Vary"] = "Cookie"
+        response.headers["Vary"] = "Authorization, Cookie"
     return response
 
 

@@ -3,6 +3,9 @@ import hashlib
 import hmac
 import os
 import time
+import json
+from urllib.request import Request as URLRequest, urlopen
+from urllib.error import HTTPError, URLError
 from collections import deque
 from threading import Lock
 
@@ -39,6 +42,16 @@ def credential_version():
     return hmac.new(SESSION_SECRET.encode(), (ADMIN_USERNAME + "\0" + ADMIN_PASSWORD).encode(), hashlib.sha256).hexdigest()
 
 
+def require_agenda_gateway(request: Request):
+    """Blocca tutte le API admin se la richiesta non arriva dal gateway autorizzato."""
+    expected = os.environ.get("AGENDA_BACKEND_SECRET", "")
+    if len(expected) < 32:
+        raise HTTPException(status_code=503, detail="Collegamento sicuro dell’agenda non configurato.")
+    supplied = request.headers.get("X-Agenda-Backend-Key", "")
+    if not hmac.compare_digest(supplied.encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="Richiesta non autorizzata.")
+
+
 def require_browser_action(request: Request):
     # Un form esterno non può impostare questo header; CORS non lo consente.
     if request.headers.get("X-Admin-Request") != "1" or request.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -53,6 +66,24 @@ def require_browser_action(request: Request):
 
 
 def require_admin(request: Request):
+    require_agenda_gateway(request)
+    authorization = request.headers.get("Authorization", "")
+    if authorization.startswith("Bearer "):
+        url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+        key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
+        if not url or not key:
+            raise HTTPException(status_code=503, detail="Supabase Auth non configurato.")
+        try:
+            auth_request = URLRequest(url + "/auth/v1/user", headers={"Authorization": authorization, "apikey": key})
+            with urlopen(auth_request, timeout=10) as auth_response:
+                user = json.load(auth_response)
+        except HTTPError:
+            raise HTTPException(status_code=401, detail="Sessione Supabase non valida.") from None
+        except (URLError, TimeoutError, ValueError):
+            raise HTTPException(status_code=503, detail="Verifica Supabase Auth non disponibile.") from None
+        if user.get("app_metadata", {}).get("role") not in ("staff", "admin"):
+            raise HTTPException(status_code=403, detail="Accesso riservato allo staff.")
+        return {"username": user["id"]}
     signer = serializer()
     token = request.cookies.get(COOKIE_NAME, "")
     try:
