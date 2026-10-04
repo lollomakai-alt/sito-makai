@@ -9,16 +9,16 @@ const emailPrivacy = import.meta.env.VITE_EMAIL_PRIVACY;
 const privacyCopy = {
   it: {
     title: "Informativa sulla privacy",
-    updated: "Ultimo aggiornamento: 1 ottobre 2026",
+    updated: "Ultimo aggiornamento: 4 ottobre 2026",
     headings: ["1. Titolare del trattamento", "2. Quali dati raccogliamo", "3. Perché li usiamo e su quale base", "4. Per quanto tempo li conserviamo", "5. Chi può accedere ai dati", "6. I tuoi diritti", "7. Cookie"],
     controller: "Il titolare gestisce il locale Makai Grand Line.",
-    data: "Quando prenoti tramite la chat o telefonicamente raccogliamo: nome, numero di telefono, eventuale email, data e ora, numero di persone ed eventuali note che fornisci (per esempio richieste particolari). Ti chiediamo di non inserire nelle note informazioni sulla tua salute. Se accetti di ricevere offerte e novità, conserviamo anche la prova del consenso, il canale e la data in cui è stato espresso, il numero delle visite registrate e la data dell'ultima visita.",
+    data: "Quando prenoti tramite il modulo sul sito o telefonicamente raccogliamo: nome, numero di telefono, eventuale email, data e ora, numero di persone ed eventuali note che fornisci (per esempio richieste particolari). Ti chiediamo di non inserire nelle note informazioni sulla tua salute. Se accetti di ricevere offerte e novità, conserviamo anche la prova del consenso, il canale e la data in cui è stato espresso, il numero delle visite registrate e la data dell'ultima visita.",
     purposes: [
-      ["Gestire la tua prenotazione", ", contattarti in caso di necessità e inviarti il promemoria via email prima della serata. Base giuridica: esecuzione della tua richiesta (art. 6.1.b GDPR)."],
+      ["Gestire la tua prenotazione", ", contattarti in caso di necessità. Il modulo online conferma sul sito e non invia email automatiche. Base giuridica: esecuzione della tua richiesta (art. 6.1.b GDPR)."],
       ["Ricordare i tuoi dati per prenotazioni future", ", solo se spunti la casella apposita. Base giuridica: il tuo consenso (art. 6.1.a GDPR). Puoi revocarlo in qualsiasi momento senza conseguenze sulla prenotazione."],
       ["Inviarti offerte e novità via email o WhatsApp", ", compreso un eventuale messaggio in occasione del tuo compleanno, e ricordare il numero delle tue visite per iniziative dedicate, solo dopo un consenso separato ed esplicito. Base giuridica: il tuo consenso (art. 6.1.a GDPR). Puoi revocarlo in qualsiasi momento, senza conseguenze sulla prenotazione."],
     ],
-    required: "Il conferimento dei dati per la prenotazione è necessario: senza non possiamo confermarla. Il consenso a ricordare i dati e quello a ricevere offerte sono facoltativi e indipendenti l'uno dall'altro.",
+    required: "Il conferimento dei dati per la prenotazione è necessario: senza non possiamo confermarla. La lettura dell’informativa privacy e il consenso marketing sono separati. La casella offerte WhatsApp del modulo online è facoltativa e non preselezionata.",
     retention: [
       "Dati della prenotazione: 30 giorni dopo la data della prenotazione, poi cancellati automaticamente.",
       "Se hai dato il consenso a essere ricordato: 12 mesi dalla data della prenotazione, poi cancellati automaticamente.",
@@ -37,16 +37,16 @@ const privacyCopy = {
   },
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: 1 October 2026",
+    updated: "Last updated: 4 October 2026",
     headings: ["1. Data controller", "2. Data we collect", "3. Why we use your data and our legal basis", "4. How long we retain your data", "5. Who can access your data", "6. Your rights", "7. Cookies"],
     controller: "The data controller operates the Makai Grand Line venue.",
-    data: "When you book through the chat or by phone, we collect your name, phone number, optional email address, booking date and time, number of guests and any notes you provide, such as special requests. Please do not include health information in the notes. If you agree to receive offers and news, we also retain evidence of your consent, the channel and the date on which it was given, the number of recorded visits and the date of your last visit.",
+    data: "When you book through the website form or by phone, we collect your name, phone number, optional email address, booking date and time, number of guests and any notes you provide, such as special requests. Please do not include health information in the notes. If you agree to receive offers and news, we also retain evidence of your consent, the channel and the date on which it was given, the number of recorded visits and the date of your last visit.",
     purposes: [
-      ["Managing your booking", ", contacting you when necessary and sending an email reminder before your visit. Legal basis: performance of your request (Article 6(1)(b) GDPR)."],
+      ["Managing your booking", ", contacting you when necessary. The online form confirms on the website and does not send automatic emails. Legal basis: performance of your request (Article 6(1)(b) GDPR)."],
       ["Remembering your details for future bookings", ", only when you select the relevant option. Legal basis: your consent (Article 6(1)(a) GDPR). You may withdraw it at any time without affecting your booking."],
       ["Sending offers and news by email or WhatsApp", ", including an optional birthday message, and remembering your number of visits for dedicated initiatives, only after separate and explicit consent. Legal basis: your consent (Article 6(1)(a) GDPR). You may withdraw consent at any time without affecting your booking."],
     ],
-    required: "Providing the data required for a booking is necessary; without it, we cannot confirm your booking. Consent to remember your details and consent to receive offers are optional and independent of each other.",
+    required: "Providing the data required for a booking is necessary; without it, we cannot confirm your booking. Reading the privacy policy and marketing consent are separate. The website form’s WhatsApp offers checkbox is optional and unchecked by default.",
     retention: ["Booking data: 30 days after the booking date, then automatically deleted.", "If you consented to being remembered: 12 months from the booking date, then automatically deleted.", "Offers, news and visit count: 24 months from the date of consent. If you consent again when making a new booking, the period restarts from the new date. Messaging and visit counting stop immediately if you withdraw consent.", "Chat messages are not retained beyond the conversation. [VERIFY]"],
     accessIntro: "Your data is processed by authorised venue staff and by the technical providers that help us operate the service, appointed as data processors:",
     providers: ["Supabase (database), with servers in the European Union (Frankfurt).", "[BACKEND HOSTING PROVIDER NAME] (website and booking service hosting).", "[EMAIL SERVICE NAME] (booking reminders and offers)."],

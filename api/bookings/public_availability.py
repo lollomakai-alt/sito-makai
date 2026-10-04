@@ -6,8 +6,6 @@ from datetime import date, timedelta
 from config import CLOSED_WEEKDAYS, MAX_ADVANCE_DAYS, MAX_PARTY_SIZE
 from database import db
 from .dates import now_local
-from .tables import TABLES, _units
-from .occupancy import reconstruct
 
 
 def month_availability(month: str, party_size: int):
@@ -27,25 +25,12 @@ def month_availability(month: str, party_size: int):
         connection.execute("SET TRANSACTION READ ONLY")
         connection.execute("SET LOCAL statement_timeout = '5000ms'")
         rows = connection.execute(
-            "SELECT id, booking_date, booking_time, party_size, tables FROM bookings "
-            "WHERE booking_date >= %s AND booking_date <= %s AND status='confirmed'",
-            (max(first, now.date()).isoformat(), min(last, horizon).isoformat()),
+            "SELECT to_char(calendar_day, 'YYYY-MM-DD') AS booking_date, "
+            "private.online_day_status(to_char(calendar_day, 'YYYY-MM-DD'), %s, NULL) AS status "
+            "FROM generate_series(%s::date, %s::date, interval '1 day') AS calendar_day",
+            (party_size, max(first, now.date()).isoformat(), min(last, horizon).isoformat()),
         ).fetchall()
-        closures = connection.execute(
-            "SELECT booking_date FROM public.online_booking_closures WHERE booking_date BETWEEN %s AND %s",
-            (first, last),
-        ).fetchall()
-    closed_online = {str(row["booking_date"]) for row in closures}
-    occupied, covers, uncertain = {}, {}, set()
-    grouped = {}
-    for row in rows:
-        grouped.setdefault(str(row["booking_date"]), []).append(row)
-    for day, bookings in grouped.items():
-        snapshot, unresolved = reconstruct(bookings)
-        if unresolved:
-            uncertain.add(day)
-        covers[day] = sum(row["party_size"] for row in bookings)
-        occupied[day] = {t.strip() for row in snapshot.rows for t in (row["tables"] or "").split(",") if t.strip()}
+    statuses = {str(row['booking_date']): row['status'] for row in rows}
     result = []
     for value in range(1, last.day + 1):
         day = date(year, number, value)
@@ -54,14 +39,9 @@ def month_availability(month: str, party_size: int):
             status = "past"
         elif day > horizon:
             status = "outside_window"
-        elif day.weekday() in CLOSED_WEEKDAYS or key in closed_online:
+        elif day.weekday() in CLOSED_WEEKDAYS:
             status = "closed"
-        elif key in uncertain:
-            status = "unverified"
-        elif covers.get(key, 0) + party_size > sum(TABLES.values()):
-            status = "full"
         else:
-            busy = occupied.get(key, set())
-            status = "available" if any(seats >= party_size and not busy.intersection(ids) for ids, seats in _units()) else "full"
+            status = statuses.get(key, "unverified")
         result.append({"date": key, "status": status})
     return {"month": month, "party_size": party_size, "days": result}

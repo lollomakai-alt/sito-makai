@@ -3,7 +3,7 @@ import SiteNav from "../components/SiteNav";
 import { useLanguage } from "../i18n/LanguageContext";
 import "../styles/prenotazioni.css";
 
-// Availability is read-only. This page never saves bookings or consent.
+// The server rechecks availability and saves a confirmed booking without tables.
 export default function BookingPage({ containerRef }) {
   const { language } = useLanguage();
   const t = (it, en) => language === "en" ? en : it;
@@ -13,6 +13,12 @@ export default function BookingPage({ containerRef }) {
   const [guests, setGuests] = useState(2);
   const [selected, setSelected] = useState(null);
   const [reviewed, setReviewed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [receipt, setReceipt] = useState(null);
+  const submitRequest = useRef(null);
+  const submitting = useRef(false);
+  const [bookingTime, setBookingTime] = useState('');
   const [settings, setSettings] = useState(null);
   const [settingsError, setSettingsError] = useState(false);
   const [confirmedGuests, setConfirmedGuests] = useState(null);
@@ -76,6 +82,30 @@ export default function BookingPage({ containerRef }) {
     setSelected(null); setReviewed(false); scrollPending.current = true;
     setConfirmedGuests(guests); setRequestVersion(value => value + 1);
   }
+  async function submitBooking(event) {
+    event.preventDefault();
+    if (submitting.current || receipt || !selected || !bookingTime || !currentAvailability) return;
+    const form = new FormData(event.currentTarget);
+    const payload = { name: form.get('name'), phone: form.get('phone'), email: form.get('email') || '',
+      date: dateKey(selected), time: bookingTime, party_size: guests, notes: form.get('notes') || '',
+      privacy: form.get('privacy') === 'on', marketing: form.get('marketing') === 'on' };
+    const signature = JSON.stringify(payload);
+    if (submitRequest.current?.signature !== signature) submitRequest.current = { signature, id: crypto.randomUUID() };
+    submitting.current = true; setSaving(true); setSaveError(''); setReviewed(false);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, request_id: submitRequest.current.id }), signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : t('Controlla i dati e riprova.', 'Check your details and retry.'));
+      if (data.ok !== true || !Number.isInteger(data.booking_id) || typeof data.status !== 'string') throw new Error(t('Salvataggio non confermato. Riprova con gli stessi dati.', 'Save unconfirmed. Retry with the same details.'));
+      setReceipt(data); setReviewed(true);
+    } catch (error) {
+      setSaveError(error.name === 'AbortError' || error instanceof TypeError
+        ? t('Risposta non ricevuta. Riprova con gli stessi dati: la richiesta non verrà duplicata.', 'No response received. Retry with the same details: your request will not be duplicated.') : error.message);
+    } finally { window.clearTimeout(timer); submitting.current = false; setSaving(false); }
+  }
   const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available") };
 
   return (
@@ -87,7 +117,8 @@ export default function BookingPage({ containerRef }) {
           <h1 className="section-title">{t("Un posto per te", "A place for you")}</h1>
           <p className="booking-subtitle-panel">{t("La tua prossima serata al Makai inizia qui. Scegli le persone e il giorno, poi lasciaci i tuoi contatti.", "Your next evening at Makai starts here. Choose your party size and date, then leave your contact details.")}</p>
         </header>
-        <form className={`booking-layout${selected && currentAvailability && !loading ? "" : " booking-layout--single"}`} onChange={() => setReviewed(false)} onSubmit={(event) => { event.preventDefault(); setReviewed(true); }}>
+        <form className={`booking-layout${selected && currentAvailability && !loading ? "" : " booking-layout--single"}`} onChange={() => setReviewed(false)} onSubmit={submitBooking}>
+          <fieldset disabled={saving || Boolean(receipt)} style={{ display: "contents" }}>
           <div className="booking-card">
             <section aria-labelledby="booking-guests-title">
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
@@ -133,9 +164,14 @@ export default function BookingPage({ containerRef }) {
           {calendarVisible && selected && currentAvailability && !loading && <div className="booking-card">
             <h2><span>03</span> {t("I tuoi contatti", "Your contact details")}</h2>
             <div className="booking-fields">
-              <label className="booking-field">{t("Nome", "Name")} *<input name="name" autoComplete="given-name" required maxLength="80" placeholder={t("Come ti chiami?", "Your name")} /></label>
+              <label className="booking-field">{t("Nome e cognome", "Full name")} *<input name="name" autoComplete="name" required minLength="2" maxLength="60" placeholder={t("Nome e cognome", "Full name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
-              <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="500" /></label>
+              <label className="booking-field">{t("Orario", "Time")} *<select name="time" required value={bookingTime} onChange={event => setBookingTime(event.target.value)}>
+                <option value="">{t("Scegli l’orario", "Choose a time")}</option>
+                {(settings?.times || []).map(time => <option key={time} value={time}>{time}</option>)}
+              </select></label>
+              <label className="booking-field">{t("Email (facoltativa)", "Email (optional)")}<input name="email" type="email" autoComplete="email" maxLength="120" /></label>
+              <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="300" /></label>
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
             <label className="booking-check booking-privacy"><input type="checkbox" required name="privacy" /><span>{t("Ho letto l’", "I have read the ")}<a href="/privacy" target="_blank" rel="noopener noreferrer">{t("informativa privacy", "privacy policy")}</a> * <small>{t("(si apre in una nuova scheda)", "(opens in a new tab)")}</small></span></label>
@@ -146,11 +182,16 @@ export default function BookingPage({ containerRef }) {
             </section>
             <div className="booking-summary">
               <h2>{t("Il tuo riepilogo", "Your summary")}</h2>
-              <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")}</p>
-              <button className="booking-submit" type="submit" disabled={!settings || !selected}>{t("Mostra riepilogo", "Show summary")}</button>
-              {reviewed && <p className="booking-result" role="status">{t("Hai consultato la disponibilità. Nessuna prenotazione o consenso è stato registrato. Per confermare, chiamaci al", "Availability checked. No booking or consent was recorded. To confirm, call us on")} <a href={phoneHref}>{settings?.phone}</a>.</p>}
+              <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")} · {bookingTime || "—"}</p>
+              <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Salvataggio…", "Saving…") : receipt ? t("Richiesta registrata", "Request recorded") : t("Conferma prenotazione", "Confirm booking")}</button>
+              {saveError && <p role="alert" className="booking-result">{saveError}</p>}
+              {reviewed && receipt && <p className="booking-result" role="status">{receipt.status === 'confirmed'
+                ? t(`Prenotazione #${receipt.booking_id} confermata per ${guests} persone alle ${bookingTime}. Il tavolo verrà assegnato dallo staff.`, `Booking #${receipt.booking_id} confirmed for ${guests} guests at ${bookingTime}. Staff will assign your table.`)
+                : t(`Richiesta #${receipt.booking_id} già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request #${receipt.booking_id} already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
+
             </div>
           </div>}
+          </fieldset>
         </form>
       </main>
     </div>

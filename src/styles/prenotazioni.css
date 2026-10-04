@@ -13,7 +13,7 @@
 .booking-field { display: grid; gap: 8px; font-size: .95rem; }
 .booking-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .booking-field-notes { grid-column: 1 / -1; }
-.booking-field input, .booking-field textarea { min-width: 0; width: 100%; padding: 13px; color: #fff; background: #142432; border: 1px solid #73828b; border-radius: 8px; font: inherit; }
+.booking-field input, .booking-field textarea, .booking-field select { min-width: 0; width: 100%; padding: 13px; color: #fff; background: #142432; border: 1px solid #73828b; border-radius: 8px; font: inherit; }
 .booking-field textarea { resize: vertical; }
 .booking-field input::placeholder, .booking-field textarea::placeholder { color: #acb8c1; }
 .booking-help { font-size: .8rem; color: #bdc9d0; line-height: 1.6; margin: 10px 0 18px; }
@@ -31,7 +31,7 @@
 .booking-day[aria-pressed="true"] { outline: 2px solid #f1cf73; outline-offset: 2px; background: #335840; }
 .booking-page button:disabled { cursor: not-allowed; }
 .booking-month button:disabled { opacity: .35; }
-.booking-page :is(a, button, input, textarea):focus-visible { outline: 3px solid #f1cf73; outline-offset: 3px; }
+.booking-page :is(a, button, input, textarea, select):focus-visible { outline: 3px solid #f1cf73; outline-offset: 3px; }
 .booking-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .75rem; margin-top: 20px; }
 .booking-date-feedback { color: #f1cf73; font-size: .9rem; line-height: 1.5; margin-bottom: 0; }
 .booking-check { display: flex; gap: 12px; align-items: flex-start; line-height: 1.5; font-size: .9rem; cursor: pointer; }
@@ -61,7 +61,7 @@
 .booking-calendar { scroll-margin-top: calc(var(--site-nav-offset, 120px) + 20px); }
 
 .booking-card { min-width: 0; }
-.booking-layout--single > .booking-card:first-child { grid-column: 1 / -1; width: min(100%, 760px); justify-self: center; }
+.booking-layout--single > fieldset > .booking-card:first-child { grid-column: 1 / -1; width: min(100%, 760px); justify-self: center; }
 .booking-intro .section-title { text-wrap: balance; }
 .booking-day { min-width: 0; aspect-ratio: 1; align-content: center; }
 

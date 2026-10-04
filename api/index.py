@@ -11,7 +11,7 @@ from typing import List, Literal, Optional
 from fastapi import FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, StrictBool
 from dotenv import load_dotenv
 
 API_DIR = Path(__file__).resolve().parent
@@ -23,6 +23,8 @@ load_dotenv(API_DIR.parent / ".env")
 import bookings
 from bookings.calendar_summary import month_summary
 from bookings.public_availability import month_availability
+from bookings.online import create_online_booking
+from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
@@ -142,6 +144,13 @@ class AdminBookingBody(BaseModel):
     notes: str = Field(default="", max_length=300)
 
 
+class OnlineBookingBody(AdminBookingBody):
+    model_config = ConfigDict(extra="forbid")
+    privacy: StrictBool
+    marketing: StrictBool = False
+    request_id: str = Field(min_length=36, max_length=36)
+
+
 class MarketingConsentBody(BaseModel):
     channel: Literal["whatsapp", "telefono", "email"]
     response_text: str = Field(min_length=1, max_length=200)
@@ -153,9 +162,30 @@ async def health_check():
     return {"status": "ok", "project": "Makai Grand Line Backend"}
 
 
+@app.post("/api/bookings", status_code=201)
+def public_create_booking(body: OnlineBookingBody, request: Request, response: Response):
+    check_rate_limit(request)
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        result = create_online_booking(**body.model_dump())
+        if not result["ok"]:
+            raise HTTPException(status_code=409, detail=result["error"])
+        if result["replayed"]:
+            response.status_code = 200
+        return result
+    except HTTPException:
+        raise
+    except Exception as error:
+        # Never return raw SQL/contacts or credentials to public clients.
+        if getattr(error, 'sqlstate', '') in {'P0001','23514','23505','22023'}:
+            raise HTTPException(status_code=409, detail="Disponibilità cambiata. Aggiorna il calendario o contatta il locale.") from None
+        logger.warning("Salvataggio prenotazione online non disponibile.")
+        raise HTTPException(status_code=503, detail="Salvataggio non confermato. Riprova con gli stessi dati.") from None
+
+
 @app.get("/api/booking-settings")
 def booking_settings():
-    return {"max_party_size": MAX_PARTY_SIZE, "phone": LOCAL_PHONE, "max_advance_days": MAX_ADVANCE_DAYS}
+    return {"max_party_size": MAX_PARTY_SIZE, "phone": LOCAL_PHONE, "max_advance_days": MAX_ADVANCE_DAYS, "times": _slots(), "privacy_version": "2026-10-04-online-v1"}
 
 
 @app.get("/api/booking-availability")
