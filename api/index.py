@@ -26,7 +26,7 @@ from bookings.public_availability import month_availability
 from bookings.online import create_online_booking
 from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
-from booking_communications import router as communications_router
+from booking_communications import router as communications_router, send_new_online_booking_email
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
 from config import MAX_PARTY_SIZE, LOCAL_PHONE, MAX_ADVANCE_DAYS
@@ -169,6 +169,13 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
             raise HTTPException(status_code=409, detail=result["error"])
         if result["replayed"]:
             response.status_code = 200
+        elif result['status'] == 'confirmed' and body.email.strip():
+            # create_online_booking has returned only after its transaction commits.
+            # Email outcome must never change the successful booking response.
+            try:
+                send_new_online_booking_email(result['booking_id'])
+            except Exception:
+                logger.warning('Conferma email automatica non confermata; prenotazione salvata.')
         return result
     except HTTPException:
         raise

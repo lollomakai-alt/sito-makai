@@ -1,6 +1,7 @@
 """API comunicazioni: JWT solo per auth; operazioni Supabase solo service_role."""
 import re
 from typing import Literal
+import logging
 
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
@@ -10,6 +11,7 @@ from admin_auth import require_admin, require_browser_action
 from supabase_server import SupabaseServer, SupabaseSendError
 
 router = APIRouter(prefix='/api/admin/bookings', tags=['admin'])
+logger = logging.getLogger('makai')
 COMMUNICATION_FIELDS = ('id', 'booking_id', 'channel', 'kind', 'status', 'snapshot', 'recipient',
                         'created_at', 'attempted_at', 'error_code', 'provider_id', 'attempts')
 
@@ -95,6 +97,10 @@ def send_confirmation_email(booking_id: int = Path(gt=0), body: SendBody = Body(
     if claimed is None:
         # The database is the authority; never call Edge or finish after a lost claim.
         raise HTTPException(status_code=409, detail='Comunicazione già gestita, non più valida o invio in corso.')
+    return send_claimed_email(server, claimed, booking_id, communication_id)
+
+
+def send_claimed_email(server, claimed, booking_id, communication_id):
     claimed = public_communication(claimed, booking_id)
     if (claimed.get('id') != communication_id or claimed.get('status') != 'sending'
             or claimed.get('channel') != 'email' or claimed.get('kind') not in ('confirmation', 'updated')):
@@ -117,3 +123,28 @@ def send_confirmation_email(booking_id: int = Path(gt=0), body: SendBody = Body(
         'bookingId': booking_id, 'type': 'booking_confirmation', 'communicationId': communication_id,
         'status': outcome, 'emailId': provider_id, 'errorCode': error_code,
     })
+
+
+def send_new_online_booking_email(booking_id):
+    """One automatic attempt for a newly committed site booking, never a retry/backfill.
+
+    The RPC verifies source, initial queued event and attempts=0 under the booking
+    lock. It shares the manual claim so a simultaneous Agenda send cannot duplicate it.
+    Email errors never turn a committed booking into a public booking failure.
+    """
+    try:
+        server = SupabaseServer()
+        claimed = server.request('POST', '/rest/v1/rpc/claim_new_online_booking_email',
+                                 {'p_booking_id': booking_id})
+        if claimed is None:
+            return
+        communication_id = claimed.get('id') if isinstance(claimed, dict) else None
+        if (type(communication_id) is not int or communication_id < 1
+                or claimed.get('kind') != 'confirmation'):
+            raise HTTPException(status_code=502, detail='Tentativo email non confermato.')
+        response = send_claimed_email(server, claimed, booking_id, communication_id)
+        if response.status_code != 200:
+            logger.warning('Conferma email automatica non accettata; consultare il log Agenda.')
+    except Exception:
+        # Never log exception bodies, contacts, credentials or provider details.
+        logger.warning('Conferma email automatica non confermata; consultare il log Agenda.')

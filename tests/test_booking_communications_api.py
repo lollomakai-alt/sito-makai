@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 import index
 import admin_auth
 import supabase_server
+import booking_communications
 
 SECRET = 'test-only-gateway-secret-' * 3
 SERVICE_KEY = 'test-only-service-role-secret'
@@ -67,6 +68,13 @@ class CommunicationApiTests(unittest.TestCase):
                 self.claim_barrier.wait(timeout=5)
             with self.claim_lock:
                 if self.row['status'] in ['queued', 'failed']:
+                    self.row['status'] = 'sending'
+                    result = self.row.copy()
+                else:
+                    result = None
+        elif request.full_url.endswith('/rpc/claim_new_online_booking_email'):
+            with self.claim_lock:
+                if self.row['status'] == 'queued':
                     self.row['status'] = 'sending'
                     result = self.row.copy()
                 else:
@@ -344,3 +352,36 @@ class CommunicationApiTests(unittest.TestCase):
         with self.auth():
             self.assertEqual(self.client.get('/api/admin/bookings/0/communications', headers=self.headers).status_code, 422)
         self.opener.open.assert_not_called()
+
+    def test_automatic_send_claims_created_online_event_and_uses_shared_transport(self):
+        booking_communications.send_new_online_booking_email(42)
+        self.assertEqual(self.row['status'], 'accepted')
+        self.assertEqual(len(self.edge_requests()), 1)
+        self.assertEqual(self.logs[-1]['p_status'], 'accepted')
+        self.assertEqual(json.loads(self.outbound[0].data), {'p_booking_id': 42})
+        self.assertNotIn('/rpc/admin_prepare_booking_communication', ''.join(r.full_url for r in self.outbound))
+        booking_communications.send_new_online_booking_email(42)
+        self.assertEqual(len(self.edge_requests()), 1)
+
+    def test_automatic_failure_is_logged_without_retries_or_propagating_to_booking(self):
+        for failure, expected in [(HTTPError('https://example.supabase.co',422,SERVICE_KEY,{},None),'failed'),
+                                  (TimeoutError(SERVICE_KEY),'unknown')]:
+            self.row['status'] = 'queued'; self.edge_failure = failure
+            before = len(self.edge_requests())
+            with self.assertLogs('makai', level='WARNING') as logs:
+                booking_communications.send_new_online_booking_email(42)
+            self.assertEqual(self.logs[-1]['p_status'], expected)
+            self.assertNotIn(SERVICE_KEY, ''.join(logs.output))
+            booking_communications.send_new_online_booking_email(42)
+            self.assertEqual(len(self.edge_requests()), before + 1)
+
+    def test_automatic_configuration_or_finish_failure_never_propagates(self):
+        with patch.dict(os.environ, {'SUPABASE_SERVICE_ROLE_KEY':''}), self.assertLogs('makai',level='WARNING'):
+            booking_communications.send_new_online_booking_email(42)
+        self.assertEqual(len(self.outbound), 0)
+        self.finish_failure = TimeoutError(SERVICE_KEY)
+        with self.assertLogs('makai', level='WARNING'):
+            booking_communications.send_new_online_booking_email(42)
+        self.assertEqual(self.row['status'], 'sending')
+        booking_communications.send_new_online_booking_email(42)
+        self.assertEqual(len(self.edge_requests()), 1)

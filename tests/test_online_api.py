@@ -35,3 +35,27 @@ class ApiTests(unittest.TestCase):
         data=self.client.get('/api/booking-settings').json()
         self.assertEqual(data['times'][0],'18:00');self.assertEqual(data['times'][-1],'23:00')
         self.assertEqual(data['privacy_version'],'2026-10-04-online-v1')
+    def test_only_new_confirmed_booking_with_email_triggers_automatic_send(self):
+        for replayed, status, email, expected in [(False,'confirmed','my@example.com',True),
+                (True,'confirmed','my@example.com',False),(False,'cancelled','my@example.com',False),
+                (False,'confirmed','',False)]:
+            index._hits.clear()
+            with patch('index.create_online_booking',return_value={'ok':True,'booking_id':42,'status':status,'replayed':replayed}), \
+                    patch('index.send_new_online_booking_email') as send:
+                response=self.client.post('/api/bookings',json=self.body|{'email':email})
+            self.assertEqual(response.status_code,200 if replayed else 201)
+            self.assertEqual(send.call_count,1 if expected else 0)
+            if expected: send.assert_called_once_with(42)
+    def test_booking_failure_never_triggers_automatic_send(self):
+        with patch('index.create_online_booking',return_value={'ok':False,'error':'Non disponibile'}), \
+                patch('index.send_new_online_booking_email') as send:
+            self.assertEqual(self.client.post('/api/bookings',json=self.body|{'email':'my@example.com'}).status_code,409)
+            send.assert_not_called()
+    def test_email_failure_preserves_successful_booking_response(self):
+        saved={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}
+        with patch('index.create_online_booking',return_value=saved), \
+                patch('index.send_new_online_booking_email',side_effect=RuntimeError('private provider secret')):
+            response=self.client.post('/api/bookings',json=self.body|{'email':'my@example.com'})
+        self.assertEqual(response.status_code,201)
+        self.assertEqual(response.json(),saved)
+        self.assertNotIn('secret',response.text)

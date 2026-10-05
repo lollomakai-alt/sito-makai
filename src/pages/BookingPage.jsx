@@ -93,7 +93,7 @@ export default function BookingPage({ containerRef }) {
     if (submitRequest.current?.signature !== signature) submitRequest.current = { signature, id: crypto.randomUUID() };
     submitting.current = true; setSaving(true); setSaveError(''); setReviewed(false);
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 20000);
+    const timer = window.setTimeout(() => controller.abort(), 90000);
     try {
       const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, request_id: submitRequest.current.id }), signal: controller.signal });
