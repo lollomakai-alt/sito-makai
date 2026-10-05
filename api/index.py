@@ -29,6 +29,7 @@ from admin_auth import router as auth_router, require_admin, require_browser_act
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
 from config import MAX_PARTY_SIZE, LOCAL_PHONE, MAX_ADVANCE_DAYS
+from origins import allowed_origins
 from menu_data import get_menu_data
 
 logging.basicConfig(level=logging.INFO)
@@ -77,13 +78,7 @@ async def private_admin_responses(request: Request, call_next):
 
 
 # CORS: solo i domini autorizzati (imposta ALLOWED_ORIGINS in produzione)
-ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.environ.get(
-        "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"
-    ).split(",")
-    if o.strip()
-]
+ALLOWED_ORIGINS = allowed_origins()
 
 app.add_middleware(
     CORSMiddleware,

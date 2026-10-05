@@ -12,6 +12,7 @@ from threading import Lock
 from fastapi import APIRouter, HTTPException, Request, Response
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from pydantic import BaseModel, Field
+from origins import allowed_origins
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or os.environ.get("ADMIN_API_KEY", "")
@@ -58,9 +59,7 @@ def require_browser_action(request: Request):
         raise HTTPException(status_code=403, detail="Richiesta non consentita.")
     origin = request.headers.get("origin")
     trusted_origins = {str(request.base_url).rstrip("/")}
-    trusted_origins.update(value.strip().rstrip("/") for value in os.environ.get(
-        "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"
-    ).split(",") if value.strip() and value.strip() != "*")
+    trusted_origins.update(allowed_origins())
     if origin and origin.rstrip("/") not in trusted_origins:
         raise HTTPException(status_code=403, detail="Origine non consentita.")
 
