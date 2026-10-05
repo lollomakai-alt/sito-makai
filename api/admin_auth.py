@@ -64,7 +64,7 @@ def require_browser_action(request: Request):
         raise HTTPException(status_code=403, detail="Origine non consentita.")
 
 
-def require_admin(request: Request):
+def require_admin(request: Request, allowed_roles=('staff', 'admin')):
     require_agenda_gateway(request)
     authorization = request.headers.get("Authorization", "")
     if authorization.startswith("Bearer "):
@@ -80,7 +80,7 @@ def require_admin(request: Request):
             raise HTTPException(status_code=401, detail="Sessione Supabase non valida.") from None
         except (URLError, TimeoutError, ValueError):
             raise HTTPException(status_code=503, detail="Verifica Supabase Auth non disponibile.") from None
-        if user.get("app_metadata", {}).get("role") not in ("staff", "admin"):
+        if user.get("app_metadata", {}).get("role") not in allowed_roles:
             raise HTTPException(status_code=403, detail="Accesso riservato allo staff.")
         return {"username": user["id"]}
     signer = serializer()

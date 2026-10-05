@@ -26,6 +26,7 @@ from bookings.public_availability import month_availability
 from bookings.online import create_online_booking
 from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
+from booking_communications import router as communications_router
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
 from config import MAX_PARTY_SIZE, LOCAL_PHONE, MAX_ADVANCE_DAYS
@@ -60,6 +61,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Makai Grand Line API", lifespan=lifespan)
 app.include_router(auth_router)
+app.include_router(communications_router)
 
 
 @app.middleware("http")
