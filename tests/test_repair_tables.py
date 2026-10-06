@@ -27,10 +27,10 @@ class RepairTests(unittest.TestCase):
             next(r for r in rows if r['id'] == entry['id'])['tables'] = ','.join(entry['proposed_tables'])
         self.assertEqual(make_report(rows, NOW)['involved'], 0)
 
-    def test_later_existing_booking_is_respected_and_turnover_allowed(self):
+    def test_later_existing_booking_is_respected_without_turnover(self):
         report = make_report([row(1, tables=None), row(2, '21:00', '12'), row(3, '22:00')], NOW)
         self.assertEqual(report['bookings'][0]['proposed_tables'], ['13'])
-        self.assertEqual(report['bookings'][1]['proposed_tables'], ['13'])
+        self.assertEqual(report['bookings'][1]['proposed_tables'], ['14'])
 
     def test_no_combination_leaves_original_empty(self):
         report = make_report([row(1, people=9)], NOW)
@@ -82,8 +82,12 @@ class RepairTests(unittest.TestCase):
 
     def test_online_insert_never_runs_without_assignment(self):
         class Connection:
-            def execute(self, *args):
+            def execute(self, sql, *args):
+                if 'online_booking_closures' in sql:
+                    return self
                 raise AssertionError('Unexpected SQL write')
+            def fetchone(self):
+                return None
         @contextmanager
         def connection(**kwargs):
             yield Connection()

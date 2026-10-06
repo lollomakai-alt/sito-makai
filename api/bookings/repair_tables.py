@@ -3,7 +3,6 @@ import hashlib
 import json
 from datetime import datetime
 
-from config import STAY_MINUTES
 from database import db
 from .dates import now_local, _parse
 from .tables import TABLES, JOINABLE_ROWS, MAX_COMBO_SEATS, _find_tables
@@ -14,13 +13,13 @@ def make_report(rows, cutoff):
     snapshot = Snapshot(rows)
     ordered = sorted(snapshot.rows, key=lambda row: (str(row['booking_date']), str(row['booking_time']), row['id']))
     fingerprint = json.dumps({'rows': ordered, 'tables': TABLES, 'joinable': JOINABLE_ROWS,
-                              'max_combo': MAX_COMBO_SEATS, 'stay': STAY_MINUTES}, sort_keys=True, default=str)
+                              'max_combo': MAX_COMBO_SEATS, 'occupancy_policy': 'explicit-release-by-booking-day-v1'}, sort_keys=True, default=str)
     report = {'version': 1, 'cutoff': cutoff.isoformat(),
               'snapshot_sha256': hashlib.sha256(fingerprint.encode()).hexdigest(), 'bookings': []}
     resolved, unresolved = reconstruct(rows)
     by_id = {row['id']: row for row in resolved.rows}
     for row in ordered:
-        if row['party_size'] < 1 or (row['tables'] or '').strip():
+        if row.get('status', 'confirmed') != 'confirmed' or row['party_size'] < 1 or (row['tables'] or '').strip():
             continue
         dt = _parse(str(row['booking_date']), str(row['booking_time'])[:5])
         if dt and dt < cutoff:
@@ -40,8 +39,8 @@ def make_report(rows, cutoff):
 
 def read_rows(connection, cutoff):
     return connection.execute(
-        "SELECT id, name, booking_date, booking_time, party_size, tables FROM bookings "
-        "WHERE status='confirmed' AND booking_date >= %s "
+        "SELECT id, name, booking_date, booking_time, party_size, tables, status FROM bookings "
+        "WHERE status NOT IN ('cancelled','no_show') AND booking_date >= %s "
         "ORDER BY booking_date, booking_time, id", (cutoff.date().isoformat(),)
     ).fetchall()
 

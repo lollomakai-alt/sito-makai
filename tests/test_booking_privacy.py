@@ -45,7 +45,12 @@ class FakeConnection:
         return self
 
     def fetchone(self):
-        return {'id': 77}
+        query = self.calls[-1][0]
+        if 'FROM public.online_booking_closures' in query:
+            return None
+        if query.lstrip().startswith('INSERT INTO bookings'):
+            return {'id': 77}
+        raise AssertionError(f'Unexpected query: {query}')
 
 
 class MarketingConnection:
@@ -175,7 +180,10 @@ class BookingPrivacyTests(unittest.TestCase):
             )
 
         self.assertTrue(result['ok'])
-        query, params = connection.calls[-1]
+        inserts = [(query, params) for query, params in connection.calls
+                   if query.lstrip().startswith('INSERT INTO bookings')]
+        self.assertEqual(len(inserts), 1)
+        query, params = inserts[0]
         self.assertIn('consenso_ricordami, consenso_data', query)
         self.assertNotIn('scadenza_dati', query)
         self.assertIn('CASE WHEN %s THEN now() ELSE NULL END', query)
@@ -195,7 +203,7 @@ class BookingPrivacyTests(unittest.TestCase):
             patch.object(booking_service, '_upcoming_for_phone', return_value=[]),
             patch.object(booking_service, '_find_tables', return_value=['10']),
         ):
-            booking_service.create_booking(
+            result = booking_service.create_booking(
                 name='Monkey Luffy',
                 email='luffy@example.com',
                 phone='+393331234567',
@@ -204,11 +212,16 @@ class BookingPrivacyTests(unittest.TestCase):
                 party_size=2,
             )
 
-        _, params = connection.calls[-1]
+        self.assertTrue(result['ok'])
+        inserts = [(query, params) for query, params in connection.calls
+                   if query.lstrip().startswith('INSERT INTO bookings')]
+        self.assertEqual(len(inserts), 1)
+        query, params = inserts[0]
+        self.assertIn('CASE WHEN %s THEN now() ELSE NULL END', query)
         self.assertIs(params[-2], False)
         self.assertIs(params[-1], False)
 
-    def test_manual_insert_is_staff_source_and_does_not_acquire_consent(self):
+    def test_manual_insert_is_agenda_source_and_does_not_acquire_consent(self):
         connection = FakeConnection()
 
         @contextmanager
@@ -233,12 +246,17 @@ class BookingPrivacyTests(unittest.TestCase):
             )
 
         self.assertTrue(result['ok'])
-        query, params = connection.calls[-1]
-        self.assertIn("'staff'", query)
+        inserts = [(query, params) for query, params in connection.calls
+                   if query.lstrip().startswith('INSERT INTO bookings')]
+        self.assertEqual(len(inserts), 1)
+        query, params = inserts[0]
+        self.assertIn("'agenda'", query)
         self.assertNotIn('consenso_ricordami', query)
         self.assertNotIn('consenso_data', query)
         self.assertNotIn('scadenza_dati', query)
         self.assertEqual(params[1], '')
+        self.assertFalse(any('marketing_contacts' in sql.lower()
+                             for sql, _ in connection.calls))
 
     def test_repeated_marketing_consent_restarts_twenty_four_month_period(self):
         connection = MarketingConnection()

@@ -67,7 +67,7 @@ nella tabella `bookings`, visibile nell'agenda del gestore.
 
 Regole in `api/config.py`: lunedì chiuso, 18:00–23:00 (anche minuti intermedi),
 anticipo minimo 30 minuti, massimo 60 giorni, da 1 a 6 persone, occupazione del
-tavolo 120 minuti e massimo 2 prenotazioni future per telefono. Il numero viene
+tavolo occupato per la giornata fino a liberazione esplicita e massimo 2 prenotazioni future per telefono. Il numero viene
 normalizzato, così prefisso `+39`, `0039` e cellulare italiano senza prefisso non
 aggirano il limite. Le alternative vengono proposte ogni 30 minuti.
 

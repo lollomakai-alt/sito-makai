@@ -23,7 +23,6 @@ SLOT_START = DINNER_BOOKING_START
 SLOT_END = DINNER_BOOKING_END
 SLOT_MINUTES = 30           # intervallo delle alternative proposte
 MAX_PARTY_SIZE = 6          # oltre questo numero è meglio chiamare il locale
-STAY_MINUTES = 120          # durata stimata di una prenotazione
 MIN_ADVANCE_MINUTES = 30    # anticipo minimo per prenotare
 MAX_ADVANCE_DAYS = 60       # anticipo massimo
 CLOSED_WEEKDAYS = [0]       # lunedì chiuso

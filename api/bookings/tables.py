@@ -1,7 +1,7 @@
 """Disposizione, combinazioni e disponibilità dei tavoli."""
 from datetime import datetime, timedelta
 
-from config import STAY_MINUTES, MIN_ADVANCE_MINUTES
+from config import MIN_ADVANCE_MINUTES
 from .dates import now_local, _parse, _slots
 
 # ======================= SALA: TAVOLI E POSTI =======================
@@ -62,25 +62,26 @@ def _units():
 
 def _occupied_tables(c, dt: datetime, exclude_id=None) -> set:
     rows = c.execute(
-        "SELECT id, booking_date, booking_time, party_size, tables FROM bookings "
-        "WHERE booking_date=%s AND status='confirmed'",
+        "SELECT id, booking_date, booking_time, party_size, tables, status FROM bookings "
+        "WHERE booking_date=%s AND status NOT IN ('cancelled','no_show')",
         (dt.strftime("%Y-%m-%d"),),
     ).fetchall()
+    # Never lose a real assignment while reconstructing legacy/incomplete rows.
+    busy = {physical.strip() for row in rows if row['id'] != exclude_id
+            and row.get('status') not in ('cancelled', 'no_show')
+            for group in (row['tables'] or '').split(',') for physical in group.split('+') if physical.strip()}
     if not getattr(c, "reconstructed_occupancy", False):
-        from .occupancy import reconstruct, booking_datetime
+        from .occupancy import reconstruct
         snapshot, unresolved = reconstruct([r for r in rows if r["id"] != exclude_id])
         for row in snapshot.rows:
-            other = booking_datetime(row)
-            if row["id"] in unresolved and (other is None or abs((other - dt).total_seconds()) < STAY_MINUTES * 60):
+            if row["id"] in unresolved:
                 return set(TABLES)
         rows = snapshot.rows
-    busy = set()
     for r in rows:
         if exclude_id is not None and r["id"] == exclude_id:
             continue
-        other = _parse(str(r["booking_date"]), str(r["booking_time"])[:5])
-        if other and abs((other - dt).total_seconds()) < STAY_MINUTES * 60:
-            busy.update(t.strip() for t in (r["tables"] or "").split(",") if t.strip())
+        # No elapsed-time release; explicit inactive statuses are filtered above.
+        busy.update(t.strip() for t in (r["tables"] or "").split(",") if t.strip())
     return busy
 
 
