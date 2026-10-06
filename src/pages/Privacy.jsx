@@ -1,96 +1,346 @@
 import SiteNav from "../components/SiteNav";
 import { useLanguage } from "../i18n/LanguageContext";
 
-const ragioneSociale = import.meta.env.VITE_RAGIONE_SOCIALE;
-const piva = import.meta.env.VITE_PIVA;
-const indirizzo = import.meta.env.VITE_INDIRIZZO;
-const emailPrivacy = import.meta.env.VITE_EMAIL_PRIVACY;
+const ragioneSociale = "AMACA S.r.l.";
+const piva = "13934581003";
+const indirizzo = "Via dei Magazzini Generali 4, 00154 Roma";
+const emailPrivacy = "makairoma@gmail.com";
 
 const privacyCopy = {
   it: {
     title: "Informativa sulla privacy",
-    updated: "Ultimo aggiornamento: 4 ottobre 2026",
-    headings: ["1. Titolare del trattamento", "2. Quali dati raccogliamo", "3. Perché li usiamo e su quale base", "4. Per quanto tempo li conserviamo", "5. Chi può accedere ai dati", "6. I tuoi diritti", "7. Cookie"],
-    controller: "Il titolare gestisce il locale Makai Grand Line.",
-    data: "Quando prenoti tramite il modulo sul sito o telefonicamente raccogliamo: nome, numero di telefono, eventuale email, data e ora, numero di persone ed eventuali note che fornisci (per esempio richieste particolari). Ti chiediamo di non inserire nelle note informazioni sulla tua salute. Se accetti di ricevere offerte e novità, conserviamo anche la prova del consenso, il canale e la data in cui è stato espresso, il numero delle visite registrate e la data dell'ultima visita.",
+    updated: "Ultimo aggiornamento: 6 ottobre 2026",
+
+    sections: {
+      controller: "1. Titolare del trattamento",
+      data: "2. Dati personali trattati",
+      purposes: "3. Finalità e basi giuridiche",
+      required: "4. Natura del conferimento",
+      retention: "5. Conservazione dei dati",
+      providers: "6. Destinatari e fornitori tecnici",
+      transfers: "7. Trasferimenti internazionali",
+      security: "8. Sicurezza",
+      rights: "9. Diritti dell'interessato",
+      authority: "10. Reclamo al Garante",
+      cookies: "11. Cookie e strumenti tecnici",
+      updates: "12. Modifiche all'informativa",
+    },
+
+    controller:
+      "Il Titolare del trattamento gestisce il locale Makai Grand Line. Per qualsiasi richiesta relativa alla protezione dei dati personali puoi utilizzare l'indirizzo email indicato sopra.",
+
+    dataIntro:
+      "Quando utilizzi il sito, effettui una prenotazione online, telefoni al locale o comunichi con il personale per una prenotazione, possiamo trattare i seguenti dati:",
+
+    dataItems: [
+      "nome indicato per la prenotazione;",
+      "numero di telefono;",
+      "indirizzo email, quando fornito o necessario per le comunicazioni relative alla prenotazione;",
+      "data e ora della prenotazione;",
+      "numero di persone;",
+      "tavolo eventualmente assegnato;",
+      "note e richieste inserite nella prenotazione;",
+      "stato della prenotazione, comprese modifiche, cancellazioni e mancata presentazione;",
+      "informazioni relative alle comunicazioni di servizio collegate alla prenotazione;",
+      "dati tecnici strettamente necessari al funzionamento e alla sicurezza del servizio.",
+    ],
+
+    sensitive:
+      "Ti chiediamo di non inserire nelle note dati relativi alla salute o altre informazioni particolarmente sensibili, salvo quando strettamente necessario e dopo aver contattato direttamente il locale.",
+
+    marketingData:
+      "Se scegli volontariamente di ricevere comunicazioni promozionali, trattiamo inoltre i dati necessari a documentare il consenso, come data, canale, stato del consenso ed eventuale revoca.",
+
     purposes: [
-      ["Gestire la tua prenotazione", ", contattarti in caso di necessità. Il modulo online conferma sul sito e non invia email automatiche. Base giuridica: esecuzione della tua richiesta (art. 6.1.b GDPR)."],
-      ["Ricordare i tuoi dati per prenotazioni future", ", solo se spunti la casella apposita. Base giuridica: il tuo consenso (art. 6.1.a GDPR). Puoi revocarlo in qualsiasi momento senza conseguenze sulla prenotazione."],
-      ["Inviarti offerte e novità via email o WhatsApp", ", compreso un eventuale messaggio in occasione del tuo compleanno, e ricordare il numero delle tue visite per iniziative dedicate, solo dopo un consenso separato ed esplicito. Base giuridica: il tuo consenso (art. 6.1.a GDPR). Puoi revocarlo in qualsiasi momento, senza conseguenze sulla prenotazione."],
+      {
+        title: "Gestione della prenotazione",
+        text: "Utilizziamo i dati per registrare e gestire la prenotazione, verificare la disponibilità, assegnare il tavolo, gestire eventuali modifiche o cancellazioni e contattarti quando necessario. Base giuridica: esecuzione di misure precontrattuali o del servizio richiesto, ai sensi dell'art. 6, par. 1, lett. b) GDPR.",
+      },
+      {
+        title: "Comunicazioni di servizio",
+        text: "Possiamo inviarti comunicazioni strettamente collegate alla prenotazione, come conferme, aggiornamenti, promemoria o comunicazioni operative. Le email di conferma possono essere inviate automaticamente. Queste comunicazioni non costituiscono marketing e sono funzionali alla gestione della prenotazione.",
+      },
+      {
+        title: "Gestione operativa e storico delle prenotazioni",
+        text: "Le informazioni relative a prenotazioni, modifiche, cancellazioni, arrivi, mancata presentazione e comunicazioni rilevanti possono essere utilizzate dal personale autorizzato per gestire il servizio e ricostruire gli eventi operativi collegati alla prenotazione.",
+      },
+      {
+        title: "Marketing e promozioni",
+        text: "Comunicazioni promozionali tramite email, WhatsApp o altri canali vengono effettuate solo in presenza di uno specifico consenso facoltativo. Base giuridica: consenso, ai sensi dell'art. 6, par. 1, lett. a) GDPR. Il consenso può essere revocato in qualsiasi momento senza conseguenze sulla prenotazione.",
+      },
     ],
-    required: "Il conferimento dei dati per la prenotazione è necessario: senza non possiamo confermarla. La lettura dell’informativa privacy e il consenso marketing sono separati. La casella offerte WhatsApp del modulo online è facoltativa e non preselezionata.",
+
+    required:
+      "Il conferimento dei dati necessari alla prenotazione è indispensabile per poterla gestire e confermare. Il consenso per finalità di marketing è invece facoltativo, separato dalla prenotazione e non è mai necessario per utilizzare i servizi del Makai.",
+
     retention: [
-      "Dati della prenotazione: 30 giorni dopo la data della prenotazione, poi cancellati automaticamente.",
-      "Se hai dato il consenso a essere ricordato: 12 mesi dalla data della prenotazione, poi cancellati automaticamente.",
-      "Offerte, novità e conteggio delle visite: 24 mesi dalla data del consenso. Se presti nuovamente il consenso in occasione di una nuova prenotazione, il periodo riparte dalla nuova data. In caso di revoca, l'invio e il conteggio cessano immediatamente.",
-      "I messaggi della chat non vengono conservati oltre la conversazione. [VERIFICA]",
+      "I dati della prenotazione vengono conservati per il periodo necessario alla gestione del servizio e secondo le scadenze configurate nei sistemi Makai.",
+      "In assenza del consenso a essere ricordato per prenotazioni future, il sistema prevede una scadenza ordinaria dei dati personali della prenotazione dopo 30 giorni.",
+      "Quando è presente il consenso a essere ricordato per prenotazioni future, il sistema prevede una conservazione fino a 12 mesi.",
+      "I dati relativi al consenso marketing e alle attività promozionali possono essere conservati fino a 24 mesi dal consenso, salvo revoca precedente.",
+      "Alcune informazioni possono essere conservate più a lungo quando ciò sia necessario per adempiere a obblighi di legge, tutelare un diritto o documentare eventi rilevanti, nel rispetto dei principi di necessità e minimizzazione.",
     ],
-    accessIntro: "I dati sono trattati dal personale autorizzato del locale e dai fornitori tecnici che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento:",
-    providers: ["Supabase (database), con server nell'Unione Europea (Francoforte).", "[NOME HOSTING DEL BACKEND] (hosting del sito e del servizio di prenotazione).", "[NOME SERVIZIO EMAIL] (invio dei promemoria e delle offerte)."],
-    automation: "La chat di prenotazione funziona con regole automatiche interne e non invia i tuoi messaggi a servizi di intelligenza artificiale esterni. [VERIFICA] Non vendiamo i tuoi dati e non li usiamo per profilazione.",
-    transfers: "[SE UN FORNITORE TRATTA DATI FUORI DALLA UE, INDICALO QUI CON LE GARANZIE USATE, ES. CLAUSOLE CONTRATTUALI STANDARD.]",
-    rights: "Puoi chiedere in qualsiasi momento accesso ai tuoi dati, rettifica, cancellazione, limitazione del trattamento, opposizione e portabilità, e revocare il consenso dato.",
-    authority: "Se ritieni che il trattamento violi la legge, puoi presentare reclamo al Garante per la protezione dei dati personali (www.garanteprivacy.it).",
-    response: "rispondiamo entro un mese.",
-    cookies: "Il sito usa solo strumenti tecnici necessari al funzionamento (per esempio l'accesso riservato al personale). Non usiamo cookie di profilazione o di analisi. [VERIFICA: se aggiungi analytics o pixel, va aggiornato e serve un banner.]",
+
+    providersIntro:
+      "I dati possono essere trattati dal personale autorizzato del Makai e dai fornitori tecnici necessari al funzionamento del servizio. Tra i principali servizi utilizzati:",
+
+    providers: [
+      "Supabase, per database, autenticazione e servizi backend;",
+      "Vercel, per hosting e distribuzione del sito web;",
+      "Resend, per l'invio delle email relative alle prenotazioni.",
+    ],
+
+    providersOutro:
+      "I fornitori trattano i dati secondo i rispettivi ruoli, condizioni contrattuali e obblighi applicabili in materia di protezione dei dati. Makai non vende i dati personali degli utenti a terzi.",
+
+    transfers:
+      "Alcuni fornitori tecnologici possono utilizzare infrastrutture o subfornitori situati anche al di fuori dello Spazio Economico Europeo. Quando applicabile, i trasferimenti avvengono nel rispetto delle condizioni previste dal GDPR, tramite decisioni di adeguatezza o altre garanzie riconosciute dalla normativa, incluse le Clausole Contrattuali Standard.",
+
+    security:
+      "Adottiamo misure tecniche e organizzative volte a proteggere i dati personali da accessi non autorizzati, perdita, alterazione o divulgazione indebita. Le funzioni amministrative e gestionali sono riservate al personale autorizzato e i servizi backend utilizzano controlli di autenticazione e autorizzazione.",
+
+    rightsIntro:
+      "Nei casi previsti dal GDPR puoi esercitare i seguenti diritti:",
+
+    rights: [
+      "accesso ai dati personali;",
+      "rettifica dei dati inesatti;",
+      "cancellazione dei dati;",
+      "limitazione del trattamento;",
+      "portabilità dei dati, quando applicabile;",
+      "opposizione al trattamento, quando applicabile;",
+      "revoca del consenso in qualsiasi momento, senza pregiudicare la liceità del trattamento effettuato prima della revoca.",
+    ],
+
+    rightsContact:
+      "Per esercitare i tuoi diritti puoi scrivere all'indirizzo email indicato nell'informativa. Le richieste saranno gestite nei termini previsti dalla normativa applicabile.",
+
+    authority:
+      "Se ritieni che il trattamento dei tuoi dati personali violi la normativa applicabile, puoi presentare reclamo al Garante per la protezione dei dati personali.",
+
+    cookies:
+      "Il sito utilizza strumenti tecnici necessari al proprio funzionamento e alla sicurezza del servizio. Non utilizziamo i dati raccolti tramite il sito per attività di profilazione pubblicitaria. Qualora in futuro vengano introdotti strumenti di analytics, advertising, pixel o tecnologie che richiedano consenso, la gestione dei cookie e questa informativa verranno aggiornate di conseguenza.",
+
+    updates:
+      "Questa informativa può essere aggiornata quando cambiano i servizi utilizzati, le modalità di trattamento o gli obblighi normativi. La data dell'ultimo aggiornamento è indicata all'inizio della pagina.",
+
+    writeTo: "Email per richieste privacy",
+    vat: "P.IVA",
+    office: "sede in",
     back: "← Torna al sito",
   },
+
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: 4 October 2026",
-    headings: ["1. Data controller", "2. Data we collect", "3. Why we use your data and our legal basis", "4. How long we retain your data", "5. Who can access your data", "6. Your rights", "7. Cookies"],
-    controller: "The data controller operates the Makai Grand Line venue.",
-    data: "When you book through the website form or by phone, we collect your name, phone number, optional email address, booking date and time, number of guests and any notes you provide, such as special requests. Please do not include health information in the notes. If you agree to receive offers and news, we also retain evidence of your consent, the channel and the date on which it was given, the number of recorded visits and the date of your last visit.",
-    purposes: [
-      ["Managing your booking", ", contacting you when necessary. The online form confirms on the website and does not send automatic emails. Legal basis: performance of your request (Article 6(1)(b) GDPR)."],
-      ["Remembering your details for future bookings", ", only when you select the relevant option. Legal basis: your consent (Article 6(1)(a) GDPR). You may withdraw it at any time without affecting your booking."],
-      ["Sending offers and news by email or WhatsApp", ", including an optional birthday message, and remembering your number of visits for dedicated initiatives, only after separate and explicit consent. Legal basis: your consent (Article 6(1)(a) GDPR). You may withdraw consent at any time without affecting your booking."],
+    updated: "Last updated: 6 October 2026",
+
+    sections: {
+      controller: "1. Data controller",
+      data: "2. Personal data we process",
+      purposes: "3. Purposes and legal bases",
+      required: "4. Provision of data",
+      retention: "5. Data retention",
+      providers: "6. Recipients and technical providers",
+      transfers: "7. International data transfers",
+      security: "8. Security",
+      rights: "9. Your rights",
+      authority: "10. Complaints",
+      cookies: "11. Cookies and technical tools",
+      updates: "12. Changes to this policy",
+    },
+
+    controller:
+      "The Data Controller operates the Makai Grand Line venue. For any request concerning the protection of personal data, you may use the email address shown above.",
+
+    dataIntro:
+      "When you use the website, make an online booking, call the venue or contact our staff regarding a booking, we may process the following data:",
+
+    dataItems: [
+      "the name provided for the booking;",
+      "telephone number;",
+      "email address, when provided or required for booking communications;",
+      "booking date and time;",
+      "number of guests;",
+      "table assigned, where applicable;",
+      "notes and requests included with the booking;",
+      "booking status, including changes, cancellations and no-shows;",
+      "information concerning service communications relating to the booking;",
+      "technical data strictly necessary for the operation and security of the service.",
     ],
-    required: "Providing the data required for a booking is necessary; without it, we cannot confirm your booking. Reading the privacy policy and marketing consent are separate. The website form’s WhatsApp offers checkbox is optional and unchecked by default.",
-    retention: ["Booking data: 30 days after the booking date, then automatically deleted.", "If you consented to being remembered: 12 months from the booking date, then automatically deleted.", "Offers, news and visit count: 24 months from the date of consent. If you consent again when making a new booking, the period restarts from the new date. Messaging and visit counting stop immediately if you withdraw consent.", "Chat messages are not retained beyond the conversation. [VERIFY]"],
-    accessIntro: "Your data is processed by authorised venue staff and by the technical providers that help us operate the service, appointed as data processors:",
-    providers: ["Supabase (database), with servers in the European Union (Frankfurt).", "[BACKEND HOSTING PROVIDER NAME] (website and booking service hosting).", "[EMAIL SERVICE NAME] (booking reminders and offers)."],
-    automation: "The booking chat uses internal automated rules and does not send your messages to external artificial intelligence services. [VERIFY] We do not sell your data or use it for profiling.",
-    transfers: "[IF A PROVIDER PROCESSES DATA OUTSIDE THE EU, STATE IT HERE AND DESCRIBE THE SAFEGUARDS USED, E.G. STANDARD CONTRACTUAL CLAUSES.]",
-    rights: "You may request access to your data, rectification, deletion, restriction of processing, objection and portability at any time, and you may withdraw any consent you have given.",
-    authority: "If you believe the processing infringes the law, you may lodge a complaint with the Italian Data Protection Authority (www.garanteprivacy.it).",
-    response: "we will respond within one month.",
-    cookies: "The website uses only technical tools required for its operation, such as restricted staff access. We do not use profiling or analytics cookies. [VERIFY: if analytics or pixels are added, this policy must be updated and a banner will be required.]",
+
+    sensitive:
+      "Please do not include health information or other particularly sensitive information in booking notes unless strictly necessary and after contacting the venue directly.",
+
+    marketingData:
+      "If you voluntarily choose to receive promotional communications, we also process the information required to document your consent, such as its date, channel, status and any subsequent withdrawal.",
+
+    purposes: [
+      {
+        title: "Booking management",
+        text: "We use your data to register and manage your booking, check availability, assign a table, handle changes or cancellations and contact you when necessary. Legal basis: steps taken at your request or performance of the requested service under Article 6(1)(b) GDPR.",
+      },
+      {
+        title: "Service communications",
+        text: "We may send communications strictly related to your booking, such as confirmations, updates, reminders or operational messages. Booking confirmation emails may be sent automatically. These communications are not marketing and are required for booking management.",
+      },
+      {
+        title: "Operational management and booking history",
+        text: "Information concerning bookings, changes, cancellations, arrivals, no-shows and relevant communications may be used by authorised staff to manage the service and reconstruct relevant operational events associated with a booking.",
+      },
+      {
+        title: "Marketing and promotions",
+        text: "Promotional communications by email, WhatsApp or other channels are sent only where you have provided specific optional consent. Legal basis: consent under Article 6(1)(a) GDPR. Consent may be withdrawn at any time without affecting your booking.",
+      },
+    ],
+
+    required:
+      "Providing the data necessary for a booking is required in order for us to manage and confirm it. Marketing consent is optional, separate from the booking and is never required in order to use Makai's services.",
+
+    retention: [
+      "Booking data is retained for the period necessary to manage the service and according to the retention periods configured in Makai's systems.",
+      "Without consent to remember your details for future bookings, the system provides for an ordinary expiry of personal booking data after 30 days.",
+      "Where consent to remember your details for future bookings has been provided, data may be retained for up to 12 months.",
+      "Data relating to marketing consent and promotional activities may be retained for up to 24 months from the date of consent, unless consent is withdrawn earlier.",
+      "Certain information may be retained for longer where necessary to comply with legal obligations, establish or defend legal claims, or document relevant events, in accordance with the principles of necessity and data minimisation.",
+    ],
+
+    providersIntro:
+      "Data may be processed by authorised Makai staff and by technical providers necessary to operate the service. The main services currently used include:",
+
+    providers: [
+      "Supabase, for database, authentication and backend services;",
+      "Vercel, for website hosting and delivery;",
+      "Resend, for sending booking-related emails.",
+    ],
+
+    providersOutro:
+      "Providers process data according to their respective roles, contractual terms and applicable data protection obligations. Makai does not sell users' personal data to third parties.",
+
+    transfers:
+      "Some technology providers may use infrastructure or subprocessors located outside the European Economic Area. Where applicable, such transfers are carried out in accordance with the GDPR through adequacy decisions or other safeguards recognised by applicable law, including Standard Contractual Clauses.",
+
+    security:
+      "We adopt technical and organisational measures designed to protect personal data against unauthorised access, loss, alteration or improper disclosure. Administrative and management functions are restricted to authorised staff and backend services use authentication and authorisation controls.",
+
+    rightsIntro:
+      "Where provided for under the GDPR, you may exercise the following rights:",
+
+    rights: [
+      "access to your personal data;",
+      "rectification of inaccurate data;",
+      "erasure of your data;",
+      "restriction of processing;",
+      "data portability, where applicable;",
+      "objection to processing, where applicable;",
+      "withdrawal of consent at any time, without affecting the lawfulness of processing carried out before withdrawal.",
+    ],
+
+    rightsContact:
+      "To exercise your rights, you may write to the email address indicated in this policy. Requests will be handled within the time limits established by applicable law.",
+
+    authority:
+      "If you believe that the processing of your personal data infringes applicable data protection law, you may lodge a complaint with the Italian Data Protection Authority (Garante per la protezione dei dati personali).",
+
+    cookies:
+      "The website uses technical tools required for its operation and security. We do not use information collected through the website for advertising profiling. If analytics, advertising tools, pixels or other technologies requiring consent are introduced in the future, cookie management and this policy will be updated accordingly.",
+
+    updates:
+      "This policy may be updated when the services we use, our processing activities or applicable legal requirements change. The date of the latest update is shown at the top of this page.",
+
+    writeTo: "Privacy requests",
+    vat: "VAT number",
+    office: "registered office at",
     back: "← Back to the website",
   },
 };
 
 export default function Privacy() {
   const { language } = useLanguage();
-  const copy = privacyCopy[language];
+  const copy = privacyCopy[language] || privacyCopy.it;
 
   return (
     <div className="scroll-container privacy-page">
       <SiteNav />
+
       <main className="privacy-main">
         <div className="privacy-card">
           <h1>{copy.title}</h1>
           <p className="privacy-updated">{copy.updated}</p>
-          <h2>{copy.headings[0]}</h2>
-          <p>{ragioneSociale}, {language === "en" ? "VAT number" : "P.IVA"} {piva}, {language === "en" ? "registered office at" : "sede in"} {indirizzo}, email {emailPrivacy}. {copy.controller}</p>
-          <h2>{copy.headings[1]}</h2>
-          <p>{copy.data}</p>
-          <h2>{copy.headings[2]}</h2>
-          <ul>{copy.purposes.map(([lead, text]) => <li key={lead}><strong>{lead}</strong>{text}</li>)}</ul>
+
+          <h2>{copy.sections.controller}</h2>
+          <p>
+            <strong>{ragioneSociale}</strong>, {copy.vat} {piva}, {copy.office}{" "}
+            {indirizzo}. {copy.controller}
+          </p>
+          <p>
+            <strong>{copy.writeTo}:</strong> {emailPrivacy}
+          </p>
+
+          <h2>{copy.sections.data}</h2>
+          <p>{copy.dataIntro}</p>
+          <ul>
+            {copy.dataItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>{copy.sensitive}</p>
+          <p>{copy.marketingData}</p>
+
+          <h2>{copy.sections.purposes}</h2>
+          {copy.purposes.map((purpose) => (
+            <p key={purpose.title}>
+              <strong>{purpose.title}.</strong> {purpose.text}
+            </p>
+          ))}
+
+          <h2>{copy.sections.required}</h2>
           <p>{copy.required}</p>
-          <h2>{copy.headings[3]}</h2>
-          <ul>{copy.retention.map((item) => <li key={item}>{item}</li>)}</ul>
-          <h2>{copy.headings[4]}</h2>
-          <p>{copy.accessIntro}</p>
-          <ul>{copy.providers.map((item) => <li key={item}>{item}</li>)}</ul>
-          <p>{copy.automation}</p>
+
+          <h2>{copy.sections.retention}</h2>
+          <ul>
+            {copy.retention.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+
+          <h2>{copy.sections.providers}</h2>
+          <p>{copy.providersIntro}</p>
+          <ul>
+            {copy.providers.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>{copy.providersOutro}</p>
+
+          <h2>{copy.sections.transfers}</h2>
           <p>{copy.transfers}</p>
-          <h2>{copy.headings[5]}</h2>
-          <p>{copy.rights} {language === "en" ? "Write to" : "Scrivi a"} {emailPrivacy}; {copy.response}</p>
+
+          <h2>{copy.sections.security}</h2>
+          <p>{copy.security}</p>
+
+          <h2>{copy.sections.rights}</h2>
+          <p>{copy.rightsIntro}</p>
+          <ul>
+            {copy.rights.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>
+            {copy.rightsContact} <strong>{emailPrivacy}</strong>
+          </p>
+
+          <h2>{copy.sections.authority}</h2>
           <p>{copy.authority}</p>
-          <h2>{copy.headings[6]}</h2>
+
+          <h2>{copy.sections.cookies}</h2>
           <p>{copy.cookies}</p>
-          <a className="privacy-back" href="/">{copy.back}</a>
+
+          <h2>{copy.sections.updates}</h2>
+          <p>{copy.updates}</p>
+
+          <a className="privacy-back" href="/">
+            {copy.back}
+          </a>
         </div>
       </main>
     </div>
