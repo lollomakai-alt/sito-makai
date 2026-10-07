@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import time
 import asyncio
@@ -201,8 +202,24 @@ def public_booking_availability(request: Request, response: Response,
         return month_availability(month, party_size)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
-    except Exception:
-        logger.warning("Disponibilità pubblica momentaneamente non disponibile.")
+    except Exception as error:
+        detail = str(error)
+        database_url = os.environ.get("DATABASE_URL", "")
+        if database_url:
+            detail = detail.replace(database_url, "[DATABASE_URL]")
+        detail = re.sub(r"(?i)postgres(?:ql)?://[^\s'\"<>]+", "[DATABASE_URL]", detail)
+        detail = re.sub(r"(?i)\bBearer\s+\S+", "Bearer [REDACTED]", detail)
+        detail = re.sub(
+            r"(?i)\b(password|passfile|token|secret|api[_-]?key)\s*[=:]\s*[^\s,;]+",
+            r"\1=[REDACTED]",
+            detail,
+        )
+        logger.warning(
+            "Disponibilità pubblica momentaneamente non disponibile: tipo=%s sqlstate=%s dettaglio=%s",
+            type(error).__name__,
+            getattr(error, "sqlstate", None),
+            detail,
+        )
         raise HTTPException(status_code=503, detail="Disponibilità non verificabile. Riprova più tardi.") from None
 
 
