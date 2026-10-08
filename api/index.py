@@ -286,8 +286,19 @@ def admin_create(body: AdminBookingBody, request: Request):
             party_size=body.party_size,
             notes=body.notes,
         )
-    except Exception:
-        logger.warning("Creazione manuale della prenotazione non disponibile.")
+    except Exception as error:
+        category = type(error).__name__
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,79}", category):
+            category = "Exception"
+        sqlstate = getattr(error, "sqlstate", None)
+        if not isinstance(sqlstate, str) or not re.fullmatch(r"[0-9A-Z]{5}", sqlstate):
+            sqlstate = "unavailable"
+        logger.warning(
+            "Creazione manuale della prenotazione non disponibile: "
+            "category=%s sqlstate=%s.",
+            category,
+            sqlstate,
+        )
         raise HTTPException(status_code=503, detail="Prenotazione non salvata: controlla il database.") from None
     if not result.get("ok"):
         raise HTTPException(status_code=422, detail=result.get("error", "Prenotazione non valida."))
