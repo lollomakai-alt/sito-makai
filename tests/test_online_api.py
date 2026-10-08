@@ -12,7 +12,8 @@ class ApiTests(unittest.TestCase):
         index._hits.clear()
         self.body=dict(name='Mario Rossi',phone='+393331234567',date='2026-10-06',time='20:00',party_size=2,privacy=True,marketing=False,request_id='11111111-1111-4111-8111-111111111111')
     def test_public_create_and_idempotent_response_no_admin_gateway(self):
-        with patch('index.create_online_booking',return_value={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}) as create:
+        with patch('index.create_online_booking',return_value={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}) as create, \
+                patch('index.send_new_online_booking_push'):
             response=self.client.post('/api/bookings',json=self.body)
             self.assertEqual(response.status_code,201)
             self.assertEqual(response.headers['cache-control'],'no-store')
@@ -41,11 +42,61 @@ class ApiTests(unittest.TestCase):
                 (False,'confirmed','',False)]:
             index._hits.clear()
             with patch('index.create_online_booking',return_value={'ok':True,'booking_id':42,'status':status,'replayed':replayed}), \
+                    patch('index.send_new_online_booking_push'), \
                     patch('index.send_new_online_booking_email') as send:
                 response=self.client.post('/api/bookings',json=self.body|{'email':email})
             self.assertEqual(response.status_code,200 if replayed else 201)
             self.assertEqual(send.call_count,1 if expected else 0)
             if expected: send.assert_called_once_with(42)
+
+    def test_push_is_sent_only_for_a_newly_committed_confirmation_even_without_email(self):
+        for replayed, status, email, expected in [
+                (False, 'confirmed', '', True),
+                (False, 'confirmed', 'my@example.com', True),
+                (True, 'confirmed', '', False),
+                (False, 'cancelled', '', False)]:
+            index._hits.clear()
+            with patch('index.create_online_booking',return_value={
+                    'ok':True,'booking_id':42,'status':status,'replayed':replayed}), \
+                    patch('index.send_new_online_booking_push') as push:
+                response=self.client.post('/api/bookings',json=self.body|{'email':email})
+            self.assertEqual(response.status_code,200 if replayed else 201)
+            self.assertEqual(push.call_count,1 if expected else 0)
+            if expected: push.assert_called_once_with(42)
+
+    def test_edge_function_failure_does_not_cancel_the_committed_booking(self):
+        saved={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}
+        with patch('index.create_online_booking',return_value=saved), \
+                patch('index.send_new_online_booking_push',side_effect=RuntimeError('private edge response')):
+            with self.assertLogs('makai',level='WARNING') as logs:
+                response=self.client.post('/api/bookings',json=self.body)
+        self.assertEqual(response.status_code,201)
+        self.assertEqual(response.json(),saved)
+        self.assertNotIn('private',response.text)
+        self.assertNotIn('private', '\n'.join(logs.output))
+
+    def test_lost_push_response_keeps_booking_success_and_replay_does_not_retry(self):
+        first={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}
+        replay={'ok':True,'booking_id':42,'status':'confirmed','replayed':True}
+        with patch('index.create_online_booking',side_effect=[first,replay]), \
+                patch('index.send_new_online_booking_push',side_effect=TimeoutError('response lost')) as push, \
+                self.assertLogs('makai',level='WARNING'):
+            initial=self.client.post('/api/bookings',json=self.body)
+            repeated=self.client.post('/api/bookings',json=self.body)
+        self.assertEqual(initial.status_code,201)
+        self.assertEqual(repeated.status_code,200)
+        self.assertEqual(initial.json(),first)
+        self.assertEqual(repeated.json(),replay)
+        push.assert_called_once_with(42)
+
+    def test_chatbot_information_route_does_not_create_bookings_or_send_pushes(self):
+        with patch('index.answer_chat',return_value={'reply':'Vai a /prenotazioni per inviare la richiesta.'}), \
+                patch('index.create_online_booking') as create, \
+                patch('index.send_new_online_booking_push') as push:
+            response=self.client.post('/api/chat',json={'message':'Vorrei prenotare un tavolo'})
+        self.assertEqual(response.status_code,200)
+        create.assert_not_called()
+        push.assert_not_called()
     def test_booking_failure_never_triggers_automatic_send(self):
         with patch('index.create_online_booking',return_value={'ok':False,'error':'Non disponibile'}), \
                 patch('index.send_new_online_booking_email') as send:
@@ -54,8 +105,10 @@ class ApiTests(unittest.TestCase):
     def test_email_failure_preserves_successful_booking_response(self):
         saved={'ok':True,'booking_id':42,'status':'confirmed','replayed':False}
         with patch('index.create_online_booking',return_value=saved), \
+                patch('index.send_new_online_booking_push') as push, \
                 patch('index.send_new_online_booking_email',side_effect=RuntimeError('private provider secret')):
             response=self.client.post('/api/bookings',json=self.body|{'email':'my@example.com'})
         self.assertEqual(response.status_code,201)
         self.assertEqual(response.json(),saved)
         self.assertNotIn('secret',response.text)
+        push.assert_called_once_with(42)

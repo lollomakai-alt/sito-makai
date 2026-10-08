@@ -14,22 +14,25 @@ Gli SQL Agenda precedenti (storico, editor, dopocena, attività, notifiche) devo
 
 `online-booking.sql` sostituisce `private.prepare_booking`, elimina l'assegnazione automatica online, conserva la protezione dei campi admin e ripristina il limite 25 coperti. Aggiunge le attestazioni privacy al booking, ricevute private per retry idempotenti, il controllo condiviso delle combinazioni normali e un evento di creazione online nello storico. Le prenotazioni precedenti non vengono modificate. Le combinazioni sono allineate e verificate con `src/config/tableAssignments.js`.
 
-Pubblicare poi **entrambi i progetti**. Finché il nuovo SQL non è applicato, il nuovo backend risponde servizio non disponibile e non conferma un salvataggio. La vecchia Edge Function `create-booking` non è usata dal Sito: dopo il nuovo SQL la sua vecchia versione, priva di attestazione privacy, non può inserire prenotazioni online. Nessuna nuova Edge Function da pubblicare.
+Pubblicare poi **entrambi i progetti**. Finché il nuovo SQL non è applicato, il nuovo backend risponde servizio non disponibile e non conferma un salvataggio. La vecchia Edge Function `create-booking` non è usata dal Sito: dopo il nuovo SQL la sua vecchia versione, priva di attestazione privacy, non può inserire prenotazioni online.
+
+Il backend Sito invia, dopo il commit, una sola richiesta server-to-server a `web-push-admin` con l'azione `new-online-booking`, autenticata con `SUPABASE_SERVICE_ROLE_KEY`. Prima dell'invio verifica la prenotazione confermata nel database e inoltra solo id, nome, data, ora, coperti e stato. La funzione Edge deve essere già pubblicata e configurata per questa azione e per le subscription/VAPID ADMIN; nessuna chiave privilegiata o VAPID privata va configurata nel browser. Questo repository non contiene il sorgente della funzione Edge. Un errore Edge non annulla il booking. I retry già registrati (`replayed`) non generano una seconda push. Nessuna modifica SQL è richiesta per questa integrazione.
 
 ## Comportamento
 
 - Nome/cognome, telefono, data, orario a mezz'ora (18–23), da 1 a 6 persone, email facoltativa, note fino a 300 caratteri. Anticipo 30 minuti, orizzonte 60 giorni, lunedì chiuso e chiusure online dell'Agenda.
-- Salvataggio serializzato sul lock esistente 734512, ricontrollo dentro la transazione. Nuova riga `source=booking`, `status=confirmed`, `tables=''`, `booking_type=normale`. Nessuna email o WhatsApp automatici.
+- Salvataggio serializzato sul lock esistente 734512, ricontrollo dentro la transazione. Nuova riga `source=booking`, `status=confirmed`, `tables=''`, `booking_type=normale`. Se il cliente ha fornito un'email, il backend prova a inviare la conferma email; indipendentemente da questa, prova a inviare la push ADMIN. Gli errori dei due invii non annullano il booking. Nessun WhatsApp automatico.
 - Il calendario mensile chiama lo stesso controllo SQL del trigger di inserimento. Somma i coperti confermati (tutti i tipi), considera l'occupazione dell'intera serata normale, inclusi gruppi ancora non assegnati; tavoli legacy sconosciuti o conflittuali bloccano conservativamente la disponibilità. Normale/dopocena conservano le occupazioni separate dell'Agenda.
 - Privacy obbligatoria registrata separatamente. Marketing WhatsApp opzionale, mai preselezionato: solo un sì salva/rinnova il contatto esistente per 24 mesi nella stessa transazione. Un no non revoca eventuali consensi precedenti. Nessun consenso, contatto o token nello storico operativo.
 - UUID per richiesta e impronta privata: reinviare lo stesso payload restituisce la ricevuta anche dopo un aggiornamento admin, senza nuova prenotazione/consenso/storico. Riutilizzare la stessa chiave con altri dati è rifiutato.
+- Il chatbot è solo informativo e non crea prenotazioni: indirizza alla pagina dedicata. Le prenotazioni effettivamente inviate dal sito passano da `POST /api/bookings` e seguono lo stesso invio push, indipendentemente dall'email.
 - Notifica `online:<id>` per ogni online confermata senza tavolo, lettura personale persistente; si risolve dopo assegnazione/cancellazione. Il click apre `?date=…&assign=…` direttamente nella mappa con la prenotazione selezionata. Evidenzia la combinazione consigliata dalla logica esistente; lo staff la salva esplicitamente. Realtime e aggiornamento periodico delle notifiche.
 
 ## Limiti di verifica
 
 Nessuna prenotazione dimostrativa creata sul database reale. Test locali non attestano la pubblicazione, il salvataggio live o il comportamento da smartphone. Applicare SQL e pubblicare i due progetti prima del controllo operativo reale.
 
-L’informativa Privacy è stata allineata al form online e all’assenza di email automatiche. Restano i segnaposto preesistenti per identità del titolare/fornitori e le verifiche su conservazione e trasferimenti: non rappresentano una verifica legale completata.
+L’informativa Privacy è stata allineata al form online. Restano i segnaposto preesistenti per identità del titolare/fornitori e le verifiche su conservazione e trasferimenti: non rappresentano una verifica legale completata.
 
 ## Protezione delle prenotazioni pendenti (4 ottobre 2026)
 
