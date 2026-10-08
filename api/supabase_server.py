@@ -37,12 +37,15 @@ class SupabaseServer:
         self._url = url
         self._key = key
 
-    def request(self, method, path, payload=None, sending=False, expect_void=False):
+    def request(self, method, path, payload=None, sending=False, expect_void=False,
+                authorization_key=None, api_key=None):
         # Callers supply only fixed server paths and validated numeric booking IDs.
         # Never forward headers, tokens or credentials supplied by the browser.
+        authorization_key = self._key if authorization_key is None else authorization_key
+        api_key = self._key if api_key is None else api_key
         outbound = URLRequest(self._url + path, method=method,
             data=None if payload is None else json.dumps(payload).encode(), headers={
-                'Authorization': 'Bearer ' + self._key, 'apikey': self._key,
+                'Authorization': 'Bearer ' + authorization_key, 'apikey': api_key,
                 'Content-Type': 'application/json',
             })
         try:

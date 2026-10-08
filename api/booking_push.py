@@ -1,5 +1,6 @@
 """Server-side dispatch for a newly committed online booking push."""
 import logging
+import os
 import re
 
 from supabase_server import SupabaseServer
@@ -59,6 +60,12 @@ def send_new_online_booking_push(booking_id):
     if type(booking_id) is not int or booking_id < 1:
         raise ValueError('ID prenotazione non valido per la notifica push.')
 
+    push_secret = os.environ.get('MAKAI_PUSH_SECRET', '')
+    publishable_key = os.environ.get('SUPABASE_PUBLISHABLE_KEY', '')
+    if (not push_secret or any(character.isspace() for character in push_secret)
+            or not publishable_key or any(character.isspace() for character in publishable_key)):
+        raise RuntimeError('Configurazione server della notifica push incompleta.')
+
     server = SupabaseServer()
     rows = server.request(
         'GET',
@@ -70,5 +77,7 @@ def send_new_online_booking_push(booking_id):
         'POST',
         '/functions/v1/web-push-admin',
         {'action': 'new-online-booking', 'booking': booking},
+        authorization_key=push_secret,
+        api_key=publishable_key,
     )
     return _validated_edge_result(result)
