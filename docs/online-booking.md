@@ -1,6 +1,8 @@
 # Flusso prenotazioni Sito → Agenda
 
-I progetti restano separati. Il Sito chiama `POST /api/bookings` sul proprio backend FastAPI; nessuna chiave Supabase privilegiata è esposta al browser. L'Agenda continua a leggere la tabella canonica protetta da RLS.
+`sito-makai` e `makai-agenda` sono applicazioni e repository GitHub distinti che condividono il progetto Supabase `fignmtkbwpbrmllbxoct` per database, autenticazione ADMIN e Edge Functions. Il Sito chiama `POST /api/bookings` sul proprio backend FastAPI, che salva direttamente la prenotazione; nessuna chiave privilegiata è esposta al browser. L'Agenda continua a leggere la tabella canonica protetta da RLS.
+
+La mappa operativa dichiarata per Vercel è `sito-makai` → `www.makaipigneto.it` e `makai-agenda` → `agenda-makai.vercel.app`; verificare le associazioni correnti nelle impostazioni Domains di Vercel. Il rilascio Vercel ordinario avviene con commit e push sul repository corrispondente e auto-deploy del progetto collegato. Non usare Vercel CLI salvo richiesta esplicita. SQL ed Edge Functions Supabase sono operazioni separate dal deploy Vercel e richiedono verifica preventiva; non intervenire sul progetto live senza richiesta esplicita.
 
 ## Applicazione SQL e pubblicazione
 
@@ -14,9 +16,11 @@ Gli SQL Agenda precedenti (storico, editor, dopocena, attività, notifiche) devo
 
 `online-booking.sql` sostituisce `private.prepare_booking`, elimina l'assegnazione automatica online, conserva la protezione dei campi admin e ripristina il limite 25 coperti. Aggiunge le attestazioni privacy al booking, ricevute private per retry idempotenti, il controllo condiviso delle combinazioni normali e un evento di creazione online nello storico. Le prenotazioni precedenti non vengono modificate. Le combinazioni sono allineate e verificate con `src/config/tableAssignments.js`.
 
-Pubblicare poi **entrambi i progetti**. Finché il nuovo SQL non è applicato, il nuovo backend risponde servizio non disponibile e non conferma un salvataggio. La vecchia Edge Function `create-booking` non è usata dal Sito: dopo il nuovo SQL la sua vecchia versione, priva di attestazione privacy, non può inserire prenotazioni online.
+Pubblicare poi **entrambi i progetti**. Finché il nuovo SQL non è applicato, il nuovo backend risponde servizio non disponibile e non conferma un salvataggio. La vecchia Edge Function `create-booking` non è usata dal Sito: dopo il nuovo SQL la sua vecchia versione, priva di attestazione privacy, non può inserire prenotazioni online. Il sorgente di `web-push-admin` è nel repository Agenda; la versione effettivamente distribuita su Supabase va verificata separatamente.
 
-Il backend Sito invia, dopo il commit, una sola richiesta server-to-server a `web-push-admin` con l'azione `new-online-booking`, autenticata con `SUPABASE_SERVICE_ROLE_KEY`. Prima dell'invio verifica la prenotazione confermata nel database e inoltra solo id, nome, data, ora, coperti e stato. La funzione Edge deve essere già pubblicata e configurata per questa azione e per le subscription/VAPID ADMIN; nessuna chiave privilegiata o VAPID privata va configurata nel browser. Questo repository non contiene il sorgente della funzione Edge. Un errore Edge non annulla il booking. I retry già registrati (`replayed`) non generano una seconda push. Nessuna modifica SQL è richiesta per questa integrazione.
+Il backend Sito invia, dopo il commit, una sola richiesta server-to-server a `web-push-admin` con l'azione `new-online-booking`. La richiesta usa `MAKAI_PUSH_SECRET` nel bearer token e la chiave publishable solo come `apikey`; la `service_role` non viene inviata alla Edge Function. La funzione verifica il secret e rilegge nel database che la prenotazione esista, sia `source=booking` e `status=confirmed`, prima di inviare. Accetta l'ID dal payload e costruisce la notifica dai dati verificati, senza fidarsi dei dati descrittivi del client. La funzione Edge deve essere configurata per questa azione e per le subscription/VAPID ADMIN; nessuna chiave privilegiata, secret push o VAPID privata va configurata nel browser. Un errore Edge non annulla il booking e il Sito non ritenta una richiesta dall'esito incerto. I retry già registrati (`replayed`) non generano una seconda push. Nessuna modifica SQL è richiesta per questa integrazione.
+
+Prima della pubblicazione configurare lo stesso `MAKAI_PUSH_SECRET` come variabile server-side su Vercel (`sito-makai`) e come Supabase secret (`web-push-admin`), quindi pubblicare la funzione Edge e il Sito. Non distribuire il Sito finché il secret non è configurato su entrambi i servizi.
 
 ## Comportamento
 

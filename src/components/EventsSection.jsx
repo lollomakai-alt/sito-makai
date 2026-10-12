@@ -6,11 +6,58 @@ import { useLanguage } from "../i18n/LanguageContext";
 export default function EventsSection() {
   const { language } = useLanguage();
   const copy = siteCopy[language].events;
+  const sectionRef = useRef(null);
   const galleryRef = useRef(null);
+  const loadedCountRef = useRef(2);
+  const [loadedCount, setLoadedCount] = useState(2);
+  const [isNearViewport, setIsNearViewport] = useState(false);
   const [isGalleryPaused, setIsGalleryPaused] = useState(false);
 
   useEffect(() => {
-    if (isGalleryPaused) return undefined;
+    const section = sectionRef.current;
+    if (!section || !("IntersectionObserver" in window)) {
+      setIsNearViewport(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsNearViewport(true);
+          setLoadedCount((count) => Math.max(count, 4));
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    loadedCountRef.current = loadedCount;
+  }, [loadedCount]);
+
+  const advanceGallery = (direction) => {
+    const gallery = galleryRef.current;
+    if (!gallery || !gallery.clientWidth || !gallery.children.length) return;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
+    const currentIndex = Math.round(gallery.scrollLeft / gallery.clientWidth);
+    const nextIndex = (currentIndex + direction + eventImages.length) % eventImages.length;
+    if (nextIndex >= loadedCountRef.current) {
+      loadedCountRef.current = Math.min(nextIndex + 1, eventImages.length);
+      setLoadedCount(loadedCountRef.current);
+      requestAnimationFrame(() => {
+        gallery.scrollTo({ left: nextIndex * gallery.clientWidth, behavior });
+      });
+      return;
+    }
+    gallery.scrollTo({ left: nextIndex * gallery.clientWidth, behavior });
+  };
+
+  useEffect(() => {
+    if (isGalleryPaused || !isNearViewport) return undefined;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let intervalId;
@@ -18,11 +65,7 @@ export default function EventsSection() {
       window.clearInterval(intervalId);
       if (reducedMotion.matches) return;
       intervalId = window.setInterval(() => {
-        const gallery = galleryRef.current;
-        if (!gallery || !gallery.clientWidth || !gallery.children.length) return;
-        const currentIndex = Math.round(gallery.scrollLeft / gallery.clientWidth);
-        const nextIndex = (currentIndex + 1) % gallery.children.length;
-        gallery.scrollTo({ left: nextIndex * gallery.clientWidth, behavior: "smooth" });
+        advanceGallery(1);
       }, 3500);
     };
     updateAutoplay();
@@ -31,20 +74,15 @@ export default function EventsSection() {
       window.clearInterval(intervalId);
       reducedMotion.removeEventListener("change", updateAutoplay);
     };
-  }, [isGalleryPaused]);
+  }, [isGalleryPaused, isNearViewport]);
 
   const scrollGallery = (direction) => {
-    const gallery = galleryRef.current;
-    if (!gallery) return;
-
-    gallery.scrollBy({
-      left: direction * gallery.clientWidth,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-    });
+    if (!isNearViewport) setIsNearViewport(true);
+    advanceGallery(direction);
   };
 
   return (
-    <section id="eventi" className="events-section content-section" aria-labelledby="events-title">
+    <section ref={sectionRef} id="eventi" className="events-section content-section" aria-labelledby="events-title">
       <h2 id="events-title" className="events-title">{copy.title}</h2>
       <div className="events-layout">
         <div className="events-copy">
@@ -67,7 +105,7 @@ export default function EventsSection() {
             className="events-gallery"
             aria-label={copy.galleryLabel}
           >
-            {eventImages.map((image) => (
+            {eventImages.slice(0, loadedCount).map((image) => (
               <a className="events-gallery-slide" href="/galleria" key={image.src}>
                 <img
                   src={`${import.meta.env.BASE_URL}${image.src}`}

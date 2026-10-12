@@ -47,7 +47,12 @@
   display: flex;
   width: calc(var(--wall-span) * 2);
   height: 100%;
-  will-change: transform;
+}
+
+@media (min-width: 768px) {
+  .hero-wall-track {
+    will-change: transform;
+  }
 }
 
 .hero-wall-composition {
@@ -80,6 +85,12 @@
   object-fit: contain;
   object-position: center;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+@media (max-width: 767px) {
+  .hero-wall-item img {
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
+  }
 }
 
 .hero-wall-item picture {
@@ -127,7 +138,7 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .hero-wall-item {
     left: var(--mobile-x);
     top: var(--mobile-y);

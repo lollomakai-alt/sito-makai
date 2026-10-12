@@ -56,9 +56,11 @@ export default function SiteNav({ activeSection }) {
         className="brand"
       >
         <img
-          src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.PNG`}
+          src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.webp`}
           alt="Makai Grand Line"
           className="logo-full"
+          width="520"
+          height="174"
         />
       </a>
 

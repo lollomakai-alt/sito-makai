@@ -75,10 +75,15 @@
 
 .about-panel-link:hover,
 .about-panel-link:focus-visible {
-  transform: translateY(-4px);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.6),
-              0 0 32px rgba(212, 175, 55, 0.35),
-              0 20px 48px rgba(0, 0, 0, 0.55);
+  transform: translateY(-5px);
+}
+
+.about-panel-link:hover .about-panel,
+.about-panel-link:focus-visible .about-panel {
+  border-color: #D4AF37;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.9),
+              0 0 28px rgba(212, 175, 55, 0.55),
+              0 18px 42px rgba(0, 0, 0, 0.55);
 }
 
 .about-panel-link:focus-visible {

@@ -31,9 +31,11 @@ export default function GalleryPage({ containerRef }) {
       <header className="gallery-page-header">
         <a href="/" className="brand" aria-label={copy.common.brandHome}>
           <img
-            src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.PNG`}
+            src={`${import.meta.env.BASE_URL}images/logo/Makai-grandline.webp`}
             alt="Makai Grand Line"
             className="logo-full"
+            width="520"
+            height="174"
           />
         </a>
         <div className="detail-header-actions">

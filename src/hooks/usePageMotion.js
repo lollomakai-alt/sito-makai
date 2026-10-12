@@ -16,7 +16,6 @@ export default function usePageMotion(containerRef, currentPath) {
 
     let disposed = false;
     let frame = 0;
-    let settlingFrame = 0;
     let pendingHash = window.location.hash;
     const media = gsap.matchMedia();
     const nav = root.querySelector(".top-nav, header");
@@ -53,18 +52,15 @@ export default function usePageMotion(containerRef, currentPath) {
     function scheduleRefresh() {
       if (disposed) return;
       cancelAnimationFrame(frame);
-      cancelAnimationFrame(settlingFrame);
       frame = requestAnimationFrame(() => {
         refreshLayout();
-        // Layout, fragment restoration and image sizing may settle a frame later.
-        settlingFrame = requestAnimationFrame(refreshLayout);
       });
     }
 
     const context = gsap.context(() => {
       media.add("(min-width: 601px)", () => {
         gsap.set(root, {
-          backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto.webp)`,
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/Tramonto-optimized.webp)`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
@@ -77,7 +73,7 @@ export default function usePageMotion(containerRef, currentPath) {
         };
       });
 
-      media.add("(prefers-reduced-motion: no-preference)", () => {
+      media.add("(min-width: 768px) and (hover: hover) and (prefers-reduced-motion: no-preference)", () => {
         if (currentPath !== "/") return undefined;
         // Animate top-level nav children only: no nested transforms on its links.
         const intro = gsap.utils.toArray(".top-nav > *, .hero-content > *", root);
@@ -97,6 +93,32 @@ export default function usePageMotion(containerRef, currentPath) {
                 end: "clamp(top 60%)",
                 scrub: 0.8,
                 invalidateOnRefresh: true,
+              },
+            });
+          });
+        });
+        scheduleRefresh();
+      }, root);
+
+      media.add("(max-width: 767px) and (prefers-reduced-motion: no-preference), (hover: none) and (prefers-reduced-motion: no-preference)", () => {
+        if (currentPath !== "/") return undefined;
+
+        const intro = gsap.utils.toArray(".top-nav > *, .hero-content > *", root);
+        gsap.fromTo(intro, { y: 16, opacity: 0 }, {
+          y: 0, opacity: 1, duration: 0.55, ease: "power2.out", stagger: 0.08,
+        });
+
+        root.querySelectorAll(".content-section").forEach((section) => {
+          Array.from(section.children).forEach((element) => {
+            gsap.fromTo(element, { y: 18, opacity: 0 }, {
+              y: 0,
+              opacity: 1,
+              duration: 0.45,
+              ease: "power1.out",
+              scrollTrigger: {
+                trigger: element,
+                start: "top 92%",
+                once: true,
               },
             });
           });
@@ -143,14 +165,15 @@ export default function usePageMotion(containerRef, currentPath) {
     const observer = new ResizeObserver(scheduleRefresh);
     observer.observe(root);
     if (nav) observer.observe(nav);
-    document.fonts?.ready.then(scheduleRefresh);
+    document.fonts?.ready.then(() => {
+      if (!disposed) scheduleRefresh();
+    });
     refreshLayout();
     scheduleRefresh();
 
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
-      cancelAnimationFrame(settlingFrame);
       observer.disconnect();
       root.removeEventListener("click", onAnchorClick);
       root.removeEventListener("load", scheduleRefresh, true);

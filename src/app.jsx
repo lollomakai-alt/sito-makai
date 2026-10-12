@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import usePageMotion from "./hooks/usePageMotion";
 
 import "./styles/app.css";
@@ -20,11 +20,30 @@ import HomeMenuSection from "./components/HomeMenuSection";
 import SiteNav from "./components/SiteNav";
 import { getMenuPage } from "./data/siteContent";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
-import AboutPage from "./pages/AboutPage";
-import GalleryPage from "./pages/GalleryPage";
-import MenuDetailPage from "./pages/MenuDetailPage";
-import Privacy from "./pages/Privacy";
-import BookingPage from "./pages/BookingPage";
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const GalleryPage = lazy(() => import("./pages/GalleryPage"));
+const MenuDetailPage = lazy(() => import("./pages/MenuDetailPage"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const BookingPage = lazy(() => import("./pages/BookingPage"));
+
+function PageFallback() {
+  return (
+    <main
+      aria-live="polite"
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "24px",
+        color: "#e8bd62",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        textAlign: "center",
+      }}
+    >
+      Caricamento…
+    </main>
+  );
+}
 
 function AppContent() {
   const containerRef = useRef(null);
@@ -44,24 +63,15 @@ function AppContent() {
     setIsChatOpen(false);
   }
 
-  if (isGalleryPage) {
-    return <GalleryPage containerRef={containerRef} />;
-  }
+  let page = null;
+  if (isGalleryPage) page = <GalleryPage containerRef={containerRef} />;
+  else if (isAboutPage) page = <AboutPage containerRef={containerRef} />;
+  else if (currentPath === "/prenotazioni") page = <BookingPage containerRef={containerRef} />;
+  else if (isPrivacyPage) page = <Privacy />;
+  else if (menuPage) page = <MenuDetailPage containerRef={containerRef} page={menuPage} />;
 
-  if (isAboutPage) {
-    return <AboutPage containerRef={containerRef} />;
-  }
-
-  if (currentPath === "/prenotazioni") {
-    return <BookingPage containerRef={containerRef} />;
-  }
-
-  if (isPrivacyPage) {
-    return <Privacy />;
-  }
-
-  if (menuPage) {
-    return <MenuDetailPage containerRef={containerRef} page={menuPage} />;
+  if (page) {
+    return <Suspense fallback={<PageFallback />}>{page}</Suspense>;
   }
 
   return (

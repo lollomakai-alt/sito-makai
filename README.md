@@ -7,7 +7,17 @@ Tiki Cocktail Bar & Ristorante a tema One Piece — Pigneto, Roma
 - **Frontend**: React 18 + Vite + Tailwind CSS 4
 - **Backend**: FastAPI (Python 3.11) su Vercel Serverless Functions
 - **Database**: Supabase (PostgreSQL)
-- **Deploy**: Vercel (monorepo con **services**: `app` + `api`)
+- **Deploy**: progetto Vercel del repository `sito-makai`, con frontend Vite e API FastAPI; Makai Agenda è un'applicazione e repository distinti.
+
+## Architettura dei progetti Makai
+
+`sito-makai` (`lollomakai-alt/sito-makai`) e `makai-agenda` (`lollomakai-alt/agenda-makai`) sono applicazioni indipendenti, ciascuna con il proprio repository GitHub e progetto Vercel. Condividono il progetto Supabase `fignmtkbwpbrmllbxoct` per database, autenticazione ADMIN e Edge Functions. Le regole di disponibilità e scrittura delle prenotazioni devono restare coerenti nei due progetti; verifica entrambi i repository prima di cambiare tali regole.
+
+Mappa operativa dei domini di produzione: `sito-makai` → `https://www.makaipigneto.it`; `makai-agenda` → `https://agenda-makai.vercel.app`. Conferma le associazioni correnti nelle impostazioni Domains dei rispettivi progetti Vercel: i file del repository non attestano la configurazione live.
+
+Il flusso ordinario di rilascio Vercel è commit e push su GitHub nel repository corretto, che attiva il deploy automatico del progetto collegato. Non usare Vercel CLI per deploy manuali salvo richiesta esplicita. Non includere modifiche dell'altro progetto nel commit. Modifiche SQL o Edge Function su Supabase sono operazioni separate: verificare prima l'ambiente e non applicarle o distribuirle implicitamente.
+
+Il backend di questo sito salva direttamente su Supabase le prenotazioni online. Dopo il commit di una nuova prenotazione confermata chiama `web-push-admin` con `new-online-booking`; la chiave privilegiata resta lato server e un errore push non annulla il booking. Le notifiche operative mostrate nell'Agenda e le notifiche Web Push di sistema sono meccanismi distinti. La PWA Agenda può essere installata su iPhone; le subscription Apple Web Push sono conservate e gestite tramite Supabase. La consegna effettiva a un dispositivo dipende anche dalla subscription, dalle chiavi VAPID e dalla configurazione Edge Function.
 
 ## Struttura del repository
 
@@ -75,18 +85,11 @@ BOOKINGS_AUTO_CLEANUP=false
 
 ## Deploy su Vercel
 
-Il repo è configurato come **Vercel Project con due Services** (`vercel.json`):
+`vercel.json` configura un singolo progetto per questo repository: Vite compila il frontend in `dist/` e FastAPI è esposto dalle funzioni serverless in `api/`, con le rotte `/api/*`. È distinto dal progetto Vercel del repository Agenda.
 
-| Servizio | Framework | Root | Pubblico su |
-|---|---|---|---|
-| `app` | Vite (React) | `.` | `/` (SPA catch-all) |
-| `api` | FastAPI | `api/` | `/api/*` (via rewrite) |
+Il rilascio ordinario avviene con commit e push su GitHub in `sito-makai`; il progetto Vercel collegato dovrebbe avviare il deploy automatico. Verifica il collegamento Git e il dominio `www.makaipigneto.it` nella dashboard Vercel: i file locali non provano la configurazione live. Non usare Vercel CLI per deploy manuali salvo richiesta esplicita.
 
-### Passaggi deploy
-
-1. Importa il repository GitHub su Vercel → "Add Project"
-2. Vercel rileva automaticamente `vercel.json` e crea i due servizi
-3. In **Settings → Environment Variables** del progetto, aggiungi le variabili per il servizio `api`:
+In **Settings → Environment Variables** del progetto, aggiungi le variabili server-side:
    - `SUPABASE_URL`
    - `SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -95,11 +98,12 @@ Il repo è configurato come **Vercel Project con due Services** (`vercel.json`):
    - `ADMIN_PASSWORD` (password pannello admin)
    - `ADMIN_COOKIE_SECURE=true`
    - `ALLOWED_ORIGINS=https://tuo-dominio.vercel.app`
-4. Deploy! Il frontend builda in `dist/`, l'API gira come serverless function.
+
+Le variabili privilegiate e le password devono restare solo nell'ambiente server; mai inserirle nelle variabili `VITE_*`, nel browser o nel repository.
 
 ## Funzionalità principali
 
-- **Chatbot "Nostromo"** (`/api/chat`): menu, cocktail, eventi, prenotazioni conversazionali
+- **Chatbot "Nostromo"** (`/api/chat`): menu, cocktail ed eventi; per prenotare indirizza alla pagina dedicata e non crea prenotazioni
 - **Prenotazioni** con disponibilità real-time, limite 6 persone online, consenso privacy opzionale (`consenso_ricordami`)
 - **Pagine Menu** (`/menu-food`, `/menu-drink`) con dati live da Supabase
 - **Agenda separata**: progetto autonomo `../makai-agenda`, avvio con `npm run dev` su http://localhost:5174. Il backend condiviso espone ancora le API protette `/api/admin/*`.

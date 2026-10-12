@@ -92,6 +92,19 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
+@media (max-width: 767px) and (hover: none), (prefers-reduced-motion: reduce) {
+  .ai-chat-box {
+    background: rgba(8, 15, 22, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .chat-toggle,
+  .chat-toggle img {
+    transition: none;
+  }
+}
+
 .chat-header {
   padding: 15px;
   background: rgba(212, 175, 55, 0.2);

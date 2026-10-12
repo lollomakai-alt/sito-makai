@@ -150,7 +150,6 @@ img {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-image: url('/images/Tramonto.webp');
   background-size: cover;
   background-position: center;
   z-index: -1;
@@ -159,6 +158,12 @@ img {
   backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+}
+
+@media (min-width: 601px) {
+  .scroll-container::before {
+    background-image: url('/images/Tramonto-optimized.webp');
+  }
 }
 
 /* NAVIGAZIONE */
@@ -310,8 +315,10 @@ img {
     border-radius: 16px;
     background: rgba(7, 11, 16, 0.96);
     box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    /* The nearly opaque background keeps the tropical panel readable without
+       forcing a full-screen blur pass on mobile GPUs. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .nav-links.is-open {
@@ -352,13 +359,20 @@ img {
   }
 }
 
+@media (max-width: 767px) and (hover: none), (prefers-reduced-motion: reduce) {
+  .mobile-nav-toggle {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @media (max-width: 600px) {
   .scroll-container::before {
     height: 100dvh;
     background-color: #050709;
     background-image:
       linear-gradient(180deg, rgba(5,7,9,0.2), rgba(5,7,9,0.48)),
-      url('/images/Tramonto-mobile.webp');
+      url('/images/Tramonto-mobile-optimized.webp');
     background-size: cover, cover;
     background-position: center, center;
     background-repeat: no-repeat;

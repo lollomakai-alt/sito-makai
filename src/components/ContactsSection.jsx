@@ -13,10 +13,10 @@ export default function ContactsSection() {
       <div className="contacts-layout">
         <div className="contacts-totem" aria-hidden="true">
           <img
-            src={`${import.meta.env.BASE_URL}images/logo/logo-totem.png`}
+            src={`${import.meta.env.BASE_URL}images/logo/logo-totem.webp`}
             alt=""
-            width="466"
-            height="894"
+            width="520"
+            height="998"
             loading="lazy"
             decoding="async"
           />
