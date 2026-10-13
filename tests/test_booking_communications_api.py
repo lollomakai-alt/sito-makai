@@ -99,6 +99,16 @@ class CommunicationApiTests(unittest.TestCase):
         user = {'id': 'admin-id', 'app_metadata': {'role': role}, 'user_metadata': {'role': 'admin'}}
         return patch.object(admin_auth, 'urlopen', side_effect=lambda *a, **kw: io.BytesIO(json.dumps(user).encode()))
 
+    def test_operational_template_uses_same_claim_and_cannot_send_twice(self):
+        self.row['kind']='reconfirmation'
+        with self.auth():
+            first=self.client.post(BASE+'/send-template-email',headers=self.headers,json={'communication_id':1})
+            second=self.client.post(BASE+'/send-template-email',headers=self.headers,json={'communication_id':1})
+        self.assertEqual(first.status_code,200)
+        self.assertEqual(second.status_code,409)
+        self.assertEqual(len(self.edge_requests()),1)
+        self.assertEqual(len(self.logs),1)
+
     def test_authorized_admin_can_list_using_service_role(self):
         with self.auth() as auth:
             response = self.client.get(ROUTES[0][1], headers=self.headers)

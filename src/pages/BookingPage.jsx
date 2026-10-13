@@ -8,7 +8,7 @@ export default function BookingPage({ containerRef }) {
   const { language } = useLanguage();
   const t = (it, en) => language === "en" ? en : it;
   const locale = language === "en" ? "en-GB" : "it-IT";
-  const [today] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
+  const [today] = useState(() => { const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone:"Europe/Rome",year:"numeric",month:"2-digit",day:"2-digit" }).formatToParts(new Date()).map(p=>[p.type,p.value])); return new Date(Number(parts.year),Number(parts.month)-1,Number(parts.day)); });
   const [monthOffset, setMonthOffset] = useState(0);
   const [guests, setGuests] = useState(2);
   const [selected, setSelected] = useState(null);
@@ -18,6 +18,7 @@ export default function BookingPage({ containerRef }) {
   const [receipt, setReceipt] = useState(null);
   const submitRequest = useRef(null);
   const submitting = useRef(false);
+  const [bookingType, setBookingType] = useState("normale");
   const [bookingTime, setBookingTime] = useState('');
   const [settings, setSettings] = useState(null);
   const [settingsError, setSettingsError] = useState(false);
@@ -51,14 +52,14 @@ export default function BookingPage({ containerRef }) {
   const formatDate = (date) => date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
   const calendarVisible = confirmedGuests === guests && !largeGroup;
-  const requestKey = `${monthKey}:${guests}:${requestVersion}`;
+  const requestKey = `${monthKey}:${guests}:${bookingType}:${bookingTime}:${requestVersion}`;
   const currentAvailability = calendarVisible && availability?.key === requestKey ? availability : null;
   const dateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   const status = date => currentAvailability?.days[dateKey(date)] || "unverified";
   const horizon = new Date(today); horizon.setDate(horizon.getDate() + (settings?.max_advance_days || 0));
   const lastMonthOffset = (horizon.getFullYear() - today.getFullYear()) * 12 + horizon.getMonth() - today.getMonth();
   useEffect(() => {
-    if (!calendarVisible) return undefined;
+    if (!calendarVisible || !bookingTime) return undefined;
     const controller = new AbortController();
     let active = true;
     const timer = window.setTimeout(() => controller.abort(), 15000);
@@ -68,7 +69,7 @@ export default function BookingPage({ containerRef }) {
       calendarRef.current?.focus({ preventScroll: true });
       calendarRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     }
-    fetch(`/api/booking-availability?month=${monthKey}&party_size=${confirmedGuests}`, { signal: controller.signal, cache: "no-store" })
+    fetch(`/api/booking-availability?month=${monthKey}&party_size=${confirmedGuests}&booking_type=${bookingType}&booking_time=${encodeURIComponent(bookingTime)}`, { signal: controller.signal, cache: "no-store" })
       .then(response => { if (!response.ok) throw new Error("Availability unavailable"); return response.json(); })
       .then(data => {
         if (data.month !== monthKey || data.party_size !== confirmedGuests || !Array.isArray(data.days)) throw new Error("Invalid availability");
@@ -88,7 +89,7 @@ export default function BookingPage({ containerRef }) {
     const form = new FormData(event.currentTarget);
     const payload = { name: form.get('name'), phone: form.get('phone'), email: form.get('email') || '',
       date: dateKey(selected), time: bookingTime, party_size: guests, notes: form.get('notes') || '',
-      privacy: form.get('privacy') === 'on', marketing: form.get('marketing') === 'on' };
+      booking_type: bookingType, privacy: form.get('privacy') === 'on', marketing: form.get('marketing') === 'on' };
     const signature = JSON.stringify(payload);
     if (submitRequest.current?.signature !== signature) submitRequest.current = { signature, id: crypto.randomUUID() };
     submitting.current = true; setSaving(true); setSaveError(''); setReviewed(false);
@@ -99,7 +100,7 @@ export default function BookingPage({ containerRef }) {
         body: JSON.stringify({ ...payload, request_id: submitRequest.current.id }), signal: controller.signal });
       const data = await response.json();
       if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : t('Controlla i dati e riprova.', 'Check your details and retry.'));
-      if (data.ok !== true || !Number.isInteger(data.booking_id) || typeof data.status !== 'string') throw new Error(t('Salvataggio non confermato. Riprova con gli stessi dati.', 'Save unconfirmed. Retry with the same details.'));
+      if (data.ok !== true || typeof data.status !== 'string') throw new Error(t('Salvataggio non confermato. Riprova con gli stessi dati.', 'Save unconfirmed. Retry with the same details.'));
       setReceipt(data); setReviewed(true);
     } catch (error) {
       setSaveError(error.name === 'AbortError' || error instanceof TypeError
@@ -121,13 +122,16 @@ export default function BookingPage({ containerRef }) {
           <fieldset disabled={saving || Boolean(receipt)} style={{ display: "contents" }}>
           <div className="booking-card">
             <section aria-labelledby="booking-guests-title">
+              <label className="booking-field">{t("Servizio", "Service")}<select value={bookingType} onChange={event => { setBookingType(event.target.value); setBookingTime(''); setConfirmedGuests(null); setSelected(null); }}><option value="normale">CENA · 19:00–22:30</option><option value="dopocena">DOPOCENA · 22:30–00:00</option></select></label>
+              <label className="booking-field">{t("Orario", "Time")}<select required value={bookingTime} onChange={event => { setBookingTime(event.target.value); setSelected(null); }}><option value="">{t("Scegli l’orario", "Choose a time")}</option>{(settings?.services?.[bookingType] || []).map(time => <option key={time} value={time}>{time === '00:00' ? t('00:00 · giorno successivo','00:00 · following day') : time}</option>)}</select></label>
+              <p className="booking-help">{t("Cucina fino alle 23:30. Il giorno selezionato è la giornata di servizio; 00:00 indica la mezzanotte successiva.","Kitchen closes at 23:30. The selected date is the service day; 00:00 means the following midnight.")}</p>
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
               <div className="booking-guest-stepper" role="group" aria-labelledby="booking-guests-title">
                 <button type="button" disabled={guests <= 1} aria-label={t("Una persona in meno", "Remove one guest")} onClick={() => { setGuests(value => Math.max(1, value - 1)); setReviewed(false); }}>−</button>
                 <output aria-live="polite" aria-label={t("Numero di persone", "Party size")}>{guests}</output>
                 <button type="button" disabled={guests >= 99} aria-label={t("Una persona in più", "Add one guest")} onClick={() => { setGuests(value => Math.min(99, value + 1)); setReviewed(false); }}>+</button>
               </div>
-              {!largeGroup && <button type="button" className="booking-submit" onClick={showAvailability} disabled={!settings || loading && calendarVisible}>
+              {!largeGroup && <button type="button" className="booking-submit" onClick={showAvailability} disabled={!settings || !bookingTime || loading && calendarVisible}>
                 {t("Conferma persone e mostra disponibilità", "Confirm guests and show availability")}
               </button>}
               {largeGroup && <div className="booking-group-notice" role="status">
@@ -139,7 +143,7 @@ export default function BookingPage({ containerRef }) {
             </section>
             {calendarVisible && <section ref={calendarRef} tabIndex={-1} className="booking-calendar" aria-labelledby="booking-date-title" aria-busy={loading}>
               <h2 id="booking-date-title"><span>02</span> {t("Scegli il giorno", "Choose a date")}</h2>
-              <p className="booking-help" role="status">{loading ? t("Controllo le date disponibili…", "Checking available dates…") : t(`Disponibilità per ${confirmedGuests} persone, senza turni.`, `Availability for ${confirmedGuests} guests, without sittings.`)}</p>
+              <p className="booking-help" role="status">{loading ? t("Controllo le date disponibili…", "Checking available dates…") : t(`${bookingType === "dopocena" ? "DOPOCENA" : "CENA"}: disponibilità per ${confirmedGuests} persone alle ${bookingTime}.`, `Availability for ${confirmedGuests} guests at ${bookingTime}.`)}</p>
               {availabilityError && <div role="alert" className="booking-help">{t("Non riesco a verificare l’agenda. Nessuna data è confermata disponibile.", "Unable to check availability. No date is confirmed available.")} <button type="button" onClick={showAvailability}>{t("Riprova", "Retry")}</button></div>}
               <div className="booking-month">
                 <button type="button" disabled={monthOffset === 0} onClick={() => setMonthOffset(monthOffset - 1)} aria-label={t("Mese precedente", "Previous month")}>←</button>
@@ -168,7 +172,7 @@ export default function BookingPage({ containerRef }) {
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
               <label className="booking-field">{t("Orario", "Time")} *<select name="time" required value={bookingTime} onChange={event => setBookingTime(event.target.value)}>
                 <option value="">{t("Scegli l’orario", "Choose a time")}</option>
-                {(settings?.times || []).map(time => <option key={time} value={time}>{time}</option>)}
+                {(settings?.services?.[bookingType] || []).map(time => <option key={time} value={time}>{time}</option>)}
               </select></label>
               <label className="booking-field">{t("Email (facoltativa)", "Email (optional)")}<input name="email" type="email" autoComplete="email" maxLength="120" /></label>
               <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="300" /></label>
@@ -185,9 +189,10 @@ export default function BookingPage({ containerRef }) {
               <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")} · {bookingTime || "—"}</p>
               <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Salvataggio…", "Saving…") : receipt ? t("Richiesta registrata", "Request recorded") : t("Conferma prenotazione", "Confirm booking")}</button>
               {saveError && <p role="alert" className="booking-result">{saveError}</p>}
+              {receipt?.management_url && <p className="booking-result"><a href={receipt.management_url}>Gestisci o riconferma la prenotazione</a></p>}
               {reviewed && receipt && <p className="booking-result" role="status">{receipt.status === 'confirmed'
-                ? t(`Prenotazione #${receipt.booking_id} confermata per ${guests} persone alle ${bookingTime}. Il tavolo verrà assegnato dallo staff.`, `Booking #${receipt.booking_id} confirmed for ${guests} guests at ${bookingTime}. Staff will assign your table.`)
-                : t(`Richiesta #${receipt.booking_id} già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request #${receipt.booking_id} already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
+                ? t(`Prenotazione confermata per ${guests} persone alle ${bookingTime}. ${bookingType === "normale" ? "Il tavolo è assegnato automaticamente." : "Il tavolo verrà assegnato quando disponibile."}`, `Booking confirmed for ${guests} guests at ${bookingTime}. ${bookingType === "normale" ? "Your table has been assigned." : "A table will be assigned when available."}`)
+                : t(`Richiesta già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
 
             </div>
           </div>}

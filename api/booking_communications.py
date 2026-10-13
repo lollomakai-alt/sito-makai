@@ -5,7 +5,7 @@ import logging
 
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Request
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from admin_auth import require_admin, require_browser_action
 from supabase_server import SupabaseServer, SupabaseSendError
@@ -103,7 +103,7 @@ def send_confirmation_email(booking_id: int = Path(gt=0), body: SendBody = Body(
 def send_claimed_email(server, claimed, booking_id, communication_id):
     claimed = public_communication(claimed, booking_id)
     if (claimed.get('id') != communication_id or claimed.get('status') != 'sending'
-            or claimed.get('channel') != 'email' or claimed.get('kind') not in ('confirmation', 'updated')):
+            or claimed.get('channel') != 'email' or claimed.get('kind') not in ('confirmation', 'updated', 'cancelled', 'reminder', 'reconfirmation', 'delay', 'alternative')):
         raise HTTPException(status_code=502, detail='Tentativo email non confermato.')
     try:
         result = server.request('POST', '/functions/v1/send-booking-email',
@@ -148,3 +148,39 @@ def send_new_online_booking_email(booking_id):
     except Exception:
         # Never log exception bodies, contacts, credentials or provider details.
         logger.warning('Conferma email automatica non confermata; consultare il log Agenda.')
+
+
+class TemplateBody(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    kind: Literal['reminder','reconfirmation','delay','alternative','cancelled']
+    proposal: str = Field(default='',max_length=300)
+
+class TemplateSendBody(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    communication_id: int = Field(strict=True,gt=0)
+
+@router.post('/{booking_id}/communications/prepare-template',dependencies=[Depends(authorize)])
+def prepare_template(booking_id: int,body: TemplateBody):
+    from database import db
+    from bookings.customer import issue_management_link
+    import os
+    try:
+        with db(write=True) as connection:
+            link=issue_management_link(connection,booking_id)
+            origin=os.environ.get('PUBLIC_SITE_URL','https://www.makaipigneto.it').rstrip('/')
+            result=connection.execute('SELECT private.prepare_staff_email(%s,%s,%s,%s) AS result',(booking_id,body.kind,origin+link,body.proposal)).fetchone()['result']
+        return {'communication':public_communication(result,booking_id)}
+    except Exception:
+        raise HTTPException(status_code=409,detail='Template non disponibile per questa prenotazione.') from None
+
+@router.post('/{booking_id}/send-template-email',dependencies=[Depends(authorize)])
+def send_template(booking_id:int,body:TemplateSendBody):
+    server=SupabaseServer()
+    server.require_booking(booking_id)
+    rows=server.request('GET',f'/rest/v1/booking_communications?select=id,booking_id,kind&id=eq.{body.communication_id}&booking_id=eq.{booking_id}&limit=1')
+    if not isinstance(rows,list) or len(rows)!=1 or rows[0].get('kind') not in ('reminder','reconfirmation','delay','alternative','cancelled'):
+        raise HTTPException(status_code=409,detail='Comunicazione non disponibile.')
+    claimed=server.request('POST','/rest/v1/rpc/claim_booking_email',{'p_id':body.communication_id})
+    if claimed is None:
+        raise HTTPException(status_code=409,detail='Comunicazione già gestita o invio in corso.')
+    return send_claimed_email(server,claimed,booking_id,body.communication_id)

@@ -9,7 +9,7 @@ from config import TZ
 from bookings.public_availability import month_availability
 
 class AvailabilityTests(unittest.TestCase):
-    def calendar(self,rows=(),people=2):
+    def calendar(self,rows=(),people=2,booking_type='normale'):
         statements=[]
         class Connection:
             def execute(self,sql,args=None): statements.append((sql,args)); return self
@@ -17,11 +17,12 @@ class AvailabilityTests(unittest.TestCase):
         @contextmanager
         def database(): yield Connection()
         with patch('bookings.public_availability.db',database),patch('bookings.public_availability.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
-            result=month_availability('2026-10',people)
+            result=month_availability('2026-10',people,booking_type)
         self.assertEqual(statements[0][0],'SET TRANSACTION READ ONLY')
-        self.assertIn('private.online_day_status',statements[2][0])
+        self.assertIn('private.online_slot_status',statements[2][0])
         self.assertNotIn('name',statements[2][0])
-        self.assertEqual(statements[2][1],(people,'2026-10-03','2026-10-31'))
+        slot='22:30' if booking_type=='dopocena' else '19:00'
+        self.assertEqual(statements[2][1],(slot,people,booking_type,'2026-10-03','2026-10-31'))
         return {d['date']:d['status'] for d in result['days']}
     def test_shared_statuses_closed_unknown_full_and_unassigned(self):
         days=self.calendar([{'booking_date':'2026-10-06','status':'available'}, {'booking_date':'2026-10-07','status':'full'}, {'booking_date':'2026-10-08','status':'unverified'}, {'booking_date':'2026-10-09','status':'closed'}])
@@ -32,6 +33,9 @@ class AvailabilityTests(unittest.TestCase):
         self.assertEqual(days['2026-10-05'],'closed')
         self.assertEqual(days['2026-10-02'],'past')
         self.assertEqual(days['2026-10-10'],'unverified')
+    def test_after_dinner_queries_the_shared_planner_with_its_own_service_key(self):
+        days=self.calendar([{'booking_date':'2026-10-06','status':'available'}],people=4,booking_type='dopocena')
+        self.assertEqual(days['2026-10-06'],'available')
     def test_invalid_request_no_database_access(self):
         with patch('bookings.public_availability.db') as database:
             for month,size in [('2026-13',2),('2026-10',True),('2026-10',7),('2026-10',0),('0000-01',2)]:
@@ -40,3 +44,14 @@ class AvailabilityTests(unittest.TestCase):
     def test_offline_never_reports_available(self):
         with patch('bookings.public_availability.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)),patch('bookings.public_availability.db',side_effect=RuntimeError('offline')):
             with self.assertRaises(RuntimeError): month_availability('2026-10',2)
+    def test_missing_slot_rpc_never_returns_synthetic_availability(self):
+        class Connection:
+            def execute(self,sql,args=None):
+                if 'private.online_slot_status' in sql:
+                    raise RuntimeError('function private.online_slot_status does not exist')
+                return self
+        @contextmanager
+        def database():yield Connection()
+        with patch('bookings.public_availability.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)),patch('bookings.public_availability.db',database):
+            with self.assertRaisesRegex(RuntimeError,'online_slot_status'):
+                month_availability('2026-10',2)

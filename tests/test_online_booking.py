@@ -9,23 +9,23 @@ from bookings.online import create_online_booking
 from config import TZ
 
 class OnlineTests(unittest.TestCase):
-    def run_booking(self,previous=None,status='available',marketing=False,privacy=True,existing=None,assigned=''):
+    def run_booking(self,previous=None,status='available',marketing=False,privacy=True,existing=None,assigned='12'):
         self.calls=[]
         class Connection:
             def execute(_,sql,args=None): self.calls.append((sql,args)); return _
             def fetchone(_):
                 sql=self.calls[-1][0]
                 if 'online_booking_receipts r' in sql:return previous
-                if 'online_day_status' in sql:return {'status':status}
+                if 'online_slot_status' in sql:return {'status':status}
                 if 'INSERT INTO public.bookings' in sql:return {'id':42,'tables':assigned,'status':'confirmed'}
                 if 'marketing_contacts WHERE' in sql:return existing
                 raise AssertionError(sql)
         @contextmanager
         def database(write=False):
             self.assertTrue(write);yield Connection()
-        with patch('bookings.online.db',database),patch('bookings.online._upcoming_for_phone',return_value=[]),patch('bookings.validators.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
+        with patch('bookings.online.db',database),patch('bookings.online._upcoming_for_phone',return_value=[]),patch('bookings.online.issue_management_link',return_value='/prenotazioni/gestisci#token='+'a'*43),patch('bookings.validators.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
             return create_online_booking('Mario Rossi','3331234567','2026-10-06','20:00',2,'11111111-1111-4111-8111-111111111111',privacy=privacy,marketing=marketing)
-    def test_confirmed_unassigned_and_no_marketing_when_unchecked(self):
+    def test_confirmed_auto_assigned_and_no_marketing_when_unchecked(self):
         result=self.run_booking()
         self.assertTrue(result['ok']);self.assertEqual(result['booking_id'],42)
         insert=next(sql for sql,args in self.calls if 'INSERT INTO public.bookings' in sql)
@@ -54,7 +54,25 @@ class OnlineTests(unittest.TestCase):
         with patch('bookings.online.db') as database:
             result=self.run_booking(privacy=False)
             self.assertFalse(result['ok']);database.assert_not_called()
-    def test_old_auto_assignment_aborts_transaction(self):
-        with self.assertRaises(RuntimeError):self.run_booking(assigned='12')
+    def test_missing_dinner_assignment_aborts_transaction(self):
+        with self.assertRaises(RuntimeError):self.run_booking(assigned='')
+    def test_missing_slot_rpc_aborts_without_inserting_booking(self):
+        statements=[]
+        class Connection:
+            def execute(self,sql,args=None):
+                statements.append(sql)
+                if 'private.online_slot_status' in sql:
+                    raise RuntimeError('function private.online_slot_status does not exist')
+                return self
+            def fetchone(self):return None
+        @contextmanager
+        def database(write=False):
+            self.assertTrue(write)
+            yield Connection()
+        with patch('bookings.online.db',database),patch('bookings.online._upcoming_for_phone',return_value=[]),patch('bookings.validators.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
+            with self.assertRaisesRegex(RuntimeError,'online_slot_status'):
+                create_online_booking('Mario Rossi','3331234567','2026-10-06','20:00',2,
+                    '11111111-1111-4111-8111-111111111111',privacy=True)
+        self.assertFalse(any('INSERT INTO public.bookings' in sql for sql in statements))
 
 if __name__=='__main__':unittest.main()

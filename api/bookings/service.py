@@ -1,5 +1,6 @@
 """Operazioni sulle prenotazioni e agenda del gestore."""
 import re
+import json
 import unicodedata
 
 from config import MAX_ACTIVE_PER_PHONE
@@ -161,12 +162,13 @@ def create_booking(name: str, email: str, phone: str, date: str, time: str,
 def create_admin_booking(name: str, phone: str, date: str, time: str,
                          party_size: int, email: str = "", notes: str = "") -> dict:
     """Inserisce una prenotazione ricevuta dal gestore, senza acquisire consensi."""
-    name = normalize_booking_name(name)
+    name = (name or "").strip()
+    name = name if 2 <= len(name) <= 60 and all(c.isalpha() or c in " -’" or c == chr(39) for c in name) else None
     if not name:
         return {"ok": False, "error": "Inserisci nome e cognome, senza numeri o simboli."}
 
-    ph = normalize_phone(phone)
-    if not ph:
+    ph = normalize_phone(phone) if phone else ""
+    if phone and not ph:
         return {"ok": False, "error": "Numero di telefono non valido."}
 
     raw_email = (email or "").strip()
@@ -179,26 +181,20 @@ def create_admin_booking(name: str, phone: str, date: str, time: str,
         return {"ok": False, "error": "Le note possono contenere al massimo 300 caratteri."}
     if type(party_size) is not int:
         return {"ok": False, "error": "Il numero di persone deve essere intero."}
-    dt, err = _validate(date, time, party_size)
-    if err:
-        return {"ok": False, "error": err}
-    if not re.fullmatch(r"[0-9]{2}:(?:00|30)", time):
-        return {"ok": False, "error": "Scegli un orario a intervalli di 30 minuti."}
+    if type(party_size) is not int or party_size < 1 or party_size > 2147483647:
+        return {"ok": False, "error": "Il numero di persone deve essere un intero positivo."}
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date or "") or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", time or ""):
+        return {"ok": False, "error": "Data o ora non valide."}
+    dt = _parse(date, time)
+    if not dt:
+        return {"ok": False, "error": "Data o ora non valide."}
     with db(write=True) as c:
-        if len(_upcoming_for_phone(c, ph)) >= MAX_ACTIVE_PER_PHONE:
-            return {"ok": False, "code": "phone_limit", "error":
-                    f"Questo telefono ha già {MAX_ACTIVE_PER_PHONE} prenotazioni attive."}
-        assigned = _find_tables(c, dt, party_size)
-        if not assigned or not valid_assignment(",".join(assigned), party_size):
-            return {"ok": False, "error": "Non c'è più posto a quell'orario.",
-                    "alternative_times": _alternatives(c, dt, party_size)}
-
         cur = c.execute(
             "INSERT INTO bookings (name, email, phone, booking_date, booking_time, party_size, notes, "
             "tables, status, source, reminder_status) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'confirmed','agenda','skipped') RETURNING id",
             (name, normalized_email, ph, dt.strftime("%Y-%m-%d"), dt.strftime("%H:%M"),
-             party_size, notes, ",".join(assigned)),
+             party_size, notes, ""),
         )
         booking_id = cur.fetchone()["id"]
         return {"ok": True, "booking_id": booking_id, "name": name,

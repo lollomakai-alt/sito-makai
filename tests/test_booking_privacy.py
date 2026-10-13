@@ -46,6 +46,8 @@ class FakeConnection:
 
     def fetchone(self):
         query = self.calls[-1][0]
+        if 'private.dinner_plan' in query:
+            return {'plan':{'assignments':{'0':'12'},'score':0}}
         if 'FROM public.online_booking_closures' in query:
             return None
         if query.lstrip().startswith('INSERT INTO bookings'):

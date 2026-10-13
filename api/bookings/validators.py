@@ -1,6 +1,6 @@
 """Normalizzazione dei contatti e controlli sulle prenotazioni."""
 import re
-from datetime import timedelta
+from datetime import timedelta, date as calendar_date
 
 from config import (
     SLOT_START, SLOT_END, CLOSED_WEEKDAYS,
@@ -61,18 +61,21 @@ def normalize_booking_name(raw: str):
 
 
 
-def _validate(date_str, time_str, party_size):
+def _validate(date_str, time_str, party_size, booking_type="normale"):
+    valid_slots = ["22:30", "23:00", "23:30", "00:00"] if booking_type == "dopocena" else ["19:00","19:30","20:00","20:30","21:00","21:30","22:00","22:30"]
+    if booking_type not in ("normale","dopocena") or time_str not in valid_slots:
+        return None, "Orario non disponibile per il servizio selezionato."
     dt = _parse(date_str, time_str)
     if not dt:
         return None, "Data o ora non valide (formato AAAA-MM-GG e HH:MM)."
-    if not SLOT_START <= dt.strftime("%H:%M") <= SLOT_END:
+    if booking_type == "normale" and not SLOT_START <= dt.strftime("%H:%M") <= SLOT_END:
         return None, f"Si prenota dalle {SLOT_START} alle {SLOT_END}."
-    if dt.weekday() in CLOSED_WEEKDAYS:
+    if calendar_date.fromisoformat(date_str).weekday() in CLOSED_WEEKDAYS:
         return None, "Quel giorno il locale è chiuso."
     now = now_local()
     if dt < now + timedelta(minutes=MIN_ADVANCE_MINUTES):
         return None, f"Servono almeno {MIN_ADVANCE_MINUTES} minuti di anticipo."
-    if dt.date() > now.date() + timedelta(days=MAX_ADVANCE_DAYS):
+    if calendar_date.fromisoformat(date_str) > now.date() + timedelta(days=MAX_ADVANCE_DAYS):
         return None, f"Si può prenotare al massimo {MAX_ADVANCE_DAYS} giorni prima."
     if not isinstance(party_size, int) or not 1 <= party_size <= MAX_PARTY_SIZE:
         call = f" al {LOCAL_PHONE}" if LOCAL_PHONE else ""

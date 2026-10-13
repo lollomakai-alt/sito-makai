@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager, suppress
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 from fastapi import FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,7 +24,8 @@ load_dotenv(API_DIR.parent / ".env")
 import bookings
 from bookings.calendar_summary import month_summary
 from bookings.public_availability import month_availability
-from bookings.online import create_online_booking
+from bookings.online import create_online_booking, PRIVACY_VERSION
+from bookings.customer import customer_action
 from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
 from booking_communications import router as communications_router, send_new_online_booking_email
@@ -135,19 +136,46 @@ class ChatMessage(BaseModel):
 
 class AdminBookingBody(BaseModel):
     name: str = Field(min_length=2, max_length=60)
-    phone: str = Field(min_length=8, max_length=30)
+    phone: str = Field(default="", max_length=30)
     email: str = Field(default="", max_length=120)
     date: str = Field(min_length=10, max_length=10)
     time: str = Field(min_length=5, max_length=5)
-    party_size: int = Field(strict=True, ge=1, le=MAX_PARTY_SIZE)
+    party_size: int = Field(strict=True, ge=1)
     notes: str = Field(default="", max_length=300)
 
 
 class OnlineBookingBody(AdminBookingBody):
+    phone: str = Field(min_length=8, max_length=30)
+    party_size: int = Field(strict=True, ge=1, le=MAX_PARTY_SIZE)
     model_config = ConfigDict(extra="forbid")
     privacy: StrictBool
     marketing: StrictBool = False
     request_id: str = Field(min_length=36, max_length=36)
+    booking_type: Literal["normale", "dopocena"] = "normale"
+
+
+class CustomerActionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token: str = Field(min_length=43,max_length=43)
+
+class CustomerRequestBody(CustomerActionBody):
+    request_type: Literal["data","ora","persone","cancellazione","note"]
+    requested_value: object = None
+
+@app.post("/api/booking-management/{action}")
+def manage_customer_booking(action: Literal["view","reconfirm","request"], body: Union[CustomerRequestBody, CustomerActionBody], request: Request, response: Response):
+    check_rate_limit(request)
+    response.headers["Cache-Control"] = "no-store"
+    if action == "request" and not isinstance(body,CustomerRequestBody):
+        raise HTTPException(status_code=422,detail="Richiesta incompleta.")
+    try:
+        return customer_action(body.token, action, getattr(body,"request_type",None), getattr(body,"requested_value",None))
+    except ValueError:
+        raise HTTPException(status_code=404,detail="Collegamento non valido o scaduto.") from None
+    except Exception as error:
+        if getattr(error,'sqlstate','') in ('P0002','40001','22023','P0001'):
+            raise HTTPException(status_code=409,detail="Richiesta non disponibile. Aggiorna la pagina o contatta il locale.") from None
+        raise HTTPException(status_code=503,detail="Servizio momentaneamente non disponibile.") from None
 
 
 class MarketingConsentBody(BaseModel):
@@ -183,7 +211,7 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
                     send_new_online_booking_email(result['booking_id'])
                 except Exception:
                     logger.warning('Conferma email automatica non confermata; prenotazione salvata.')
-        return result
+        return {key:value for key,value in result.items() if key != 'booking_id'}
     except HTTPException:
         raise
     except Exception as error:
@@ -196,16 +224,17 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
 
 @app.get("/api/booking-settings")
 def booking_settings():
-    return {"max_party_size": MAX_PARTY_SIZE, "phone": LOCAL_PHONE, "max_advance_days": MAX_ADVANCE_DAYS, "times": _slots(), "privacy_version": "2026-10-04-online-v1"}
+    return {"max_party_size": MAX_PARTY_SIZE, "phone": LOCAL_PHONE, "max_advance_days": MAX_ADVANCE_DAYS, "times": _slots(), "services": {"normale": _slots(), "dopocena": ["22:30","23:00","23:30","00:00"]}, "kitchen_close": "23:30", "venue_close": {"default":"01:00","saturday":"02:00"}, "privacy_version": PRIVACY_VERSION}
 
 
 @app.get("/api/booking-availability")
 def public_booking_availability(request: Request, response: Response,
-                                month: str, party_size: int = Query(ge=1, le=MAX_PARTY_SIZE)):
+                                month: str, party_size: int = Query(ge=1, le=MAX_PARTY_SIZE),
+                                booking_type: Literal["normale", "dopocena"] = "normale", booking_time: Optional[str] = None):
     check_rate_limit(request)
     response.headers["Cache-Control"] = "no-store"
     try:
-        return month_availability(month, party_size)
+        return month_availability(month, party_size, booking_type, booking_time)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     except Exception as error:

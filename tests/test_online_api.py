@@ -34,8 +34,8 @@ class ApiTests(unittest.TestCase):
             self.assertNotIn('credentials',response.text)
     def test_settings_provide_real_slots_and_privacy_version(self):
         data=self.client.get('/api/booking-settings').json()
-        self.assertEqual(data['times'][0],'18:00');self.assertEqual(data['times'][-1],'23:00')
-        self.assertEqual(data['privacy_version'],'2026-10-04-online-v1')
+        self.assertEqual(data['times'][0],'19:00');self.assertEqual(data['times'][-1],'22:30')
+        self.assertEqual(data['privacy_version'],'2026-10-12-online-v2')
     def test_only_new_confirmed_booking_with_email_triggers_automatic_send(self):
         for replayed, status, email, expected in [(False,'confirmed','my@example.com',True),
                 (True,'confirmed','my@example.com',False),(False,'cancelled','my@example.com',False),
@@ -71,7 +71,7 @@ class ApiTests(unittest.TestCase):
             with self.assertLogs('makai',level='WARNING') as logs:
                 response=self.client.post('/api/bookings',json=self.body)
         self.assertEqual(response.status_code,201)
-        self.assertEqual(response.json(),saved)
+        self.assertEqual(response.json(),{k:v for k,v in saved.items() if k!='booking_id'})
         self.assertNotIn('private',response.text)
         self.assertNotIn('private', '\n'.join(logs.output))
 
@@ -85,8 +85,8 @@ class ApiTests(unittest.TestCase):
             repeated=self.client.post('/api/bookings',json=self.body)
         self.assertEqual(initial.status_code,201)
         self.assertEqual(repeated.status_code,200)
-        self.assertEqual(initial.json(),first)
-        self.assertEqual(repeated.json(),replay)
+        self.assertEqual(initial.json(),{k:v for k,v in first.items() if k!='booking_id'})
+        self.assertEqual(repeated.json(),{k:v for k,v in replay.items() if k!='booking_id'})
         push.assert_called_once_with(42)
 
     def test_chatbot_information_route_does_not_create_bookings_or_send_pushes(self):
@@ -109,6 +109,6 @@ class ApiTests(unittest.TestCase):
                 patch('index.send_new_online_booking_email',side_effect=RuntimeError('private provider secret')):
             response=self.client.post('/api/bookings',json=self.body|{'email':'my@example.com'})
         self.assertEqual(response.status_code,201)
-        self.assertEqual(response.json(),saved)
+        self.assertEqual(response.json(),{k:v for k,v in saved.items() if k!='booking_id'})
         self.assertNotIn('secret',response.text)
         push.assert_called_once_with(42)

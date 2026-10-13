@@ -42,6 +42,7 @@ const privacyCopy = {
       "note e richieste inserite nella prenotazione;",
       "stato della prenotazione, comprese modifiche, cancellazioni e mancata presentazione;",
       "informazioni relative alle comunicazioni di servizio collegate alla prenotazione;",
+      "richieste di modifica o cancellazione, decisioni dello staff e riconferme ricevute tramite il collegamento personale;",
       "dati tecnici strettamente necessari al funzionamento e alla sicurezza del servizio.",
     ],
 
@@ -58,7 +59,7 @@ const privacyCopy = {
       },
       {
         title: "Comunicazioni di servizio",
-        text: "Possiamo inviarti comunicazioni strettamente collegate alla prenotazione, come conferme, aggiornamenti, promemoria o comunicazioni operative. Le email di conferma possono essere inviate automaticamente. Queste comunicazioni non costituiscono marketing e sono funzionali alla gestione della prenotazione.",
+        text: "Possiamo inviarti comunicazioni strettamente collegate alla prenotazione, come conferme, aggiornamenti, promemoria o comunicazioni operative. Le email di conferma possono essere inviate automaticamente. Il collegamento personale permette di riconfermare o inviare richieste di modifica e cancellazione: queste ultime richiedono l’approvazione dello staff. Il link scade 30 giorni dopo la prenotazione e non va condiviso. Queste comunicazioni non costituiscono marketing e sono funzionali alla gestione della prenotazione.",
       },
       {
         title: "Gestione operativa e storico delle prenotazioni",
@@ -165,6 +166,7 @@ const privacyCopy = {
       "notes and requests included with the booking;",
       "booking status, including changes, cancellations and no-shows;",
       "information concerning service communications relating to the booking;",
+      "change or cancellation requests, staff decisions and reconfirmations received through the personal link;",
       "technical data strictly necessary for the operation and security of the service.",
     ],
 
@@ -181,7 +183,7 @@ const privacyCopy = {
       },
       {
         title: "Service communications",
-        text: "We may send communications strictly related to your booking, such as confirmations, updates, reminders or operational messages. Booking confirmation emails may be sent automatically. These communications are not marketing and are required for booking management.",
+        text: "We may send communications strictly related to your booking, such as confirmations, updates, reminders or operational messages. Booking confirmation emails may be sent automatically. The personal link lets you reconfirm or request changes or cancellation; requests require staff approval. The link expires 30 days after the booking and should not be shared. These communications are not marketing and are required for booking management.",
       },
       {
         title: "Operational management and booking history",

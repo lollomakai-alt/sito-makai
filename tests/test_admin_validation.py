@@ -22,7 +22,7 @@ class AdminValidationTests(unittest.TestCase):
 
     def test_invalid_inputs_never_open_database(self):
         values = dict(name='Marco Rossi', phone='3331234567', email='', date='2026-10-06', time='21:00', party_size=4, notes='')
-        cases = [dict(name='Marco'), dict(phone='34255678'), dict(email='marco gmail@gmail.com'), dict(time='21:15'), dict(time='25:00'), dict(party_size=2.5), dict(party_size=True), dict(party_size=0), dict(date='2026-02-30'), dict(date='2026-10-05'), dict(date='2026-10-01'), dict(notes='x' * 301)]
+        cases = [dict(name='M'), dict(phone='34255678'), dict(email='marco gmail@gmail.com'), dict(time='25:00'), dict(party_size=2.5), dict(party_size=True), dict(party_size=0), dict(date='2026-02-30'), dict(notes='x' * 301)]
         with patch('bookings.service.db') as database, patch('bookings.validators.now_local', return_value=datetime(2026, 10, 2, 12, tzinfo=TZ)):
             for change in cases:
                 with self.subTest(change=change):

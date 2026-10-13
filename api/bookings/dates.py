@@ -14,7 +14,7 @@ def _parse(date_str: str, time_str: str):
         t = datetime.strptime((time_str or "").strip(), "%H:%M")
     except ValueError:
         return None
-    return datetime.combine(d.date(), t.time(), tzinfo=TZ)
+    return datetime.combine(d.date() + (timedelta(days=1) if t.hour < 6 else timedelta()), t.time(), tzinfo=TZ)
 
 
 

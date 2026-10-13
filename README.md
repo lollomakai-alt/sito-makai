@@ -1,3 +1,7 @@
+# Implementazione locale CENA/DOPOCENA
+
+Vedi [docs/complete-booking-system.md](docs/complete-booking-system.md) per le regole nuove e le dipendenze SQL. Nessuna migrazione, deploy o comunicazione reale è stata eseguita.
+
 # Makai Grand Line — Sito ufficiale
 
 Tiki Cocktail Bar & Ristorante a tema One Piece — Pigneto, Roma

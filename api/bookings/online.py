@@ -1,4 +1,4 @@
-"""Online requests: atomic consent, idempotent retries, staff-only table assignment."""
+"""Atomic online booking: SQL assignment, service quota, privacy and safe retries."""
 import hashlib
 import json
 import re
@@ -7,14 +7,15 @@ from config import MAX_ACTIVE_PER_PHONE
 from database import db
 from .validators import normalize_booking_name, normalize_phone, normalize_email, _validate
 from .service import _upcoming_for_phone
+from .customer import issue_management_link
 
-PRIVACY_VERSION = "2026-10-04-online-v1"
+PRIVACY_VERSION = "2026-10-12-online-v2"
 MARKETING_VERSION = "2026-10-04-online-v1"
 MARKETING_TEXT = "Voglio ricevere sconti, offerte e novità di Makai tramite WhatsApp."
 
 
 def create_online_booking(name, phone, date, time, party_size, request_id,
-                          privacy=False, marketing=False, email="", notes=""):
+                          privacy=False, marketing=False, email="", notes="", booking_type="normale"):
     name = normalize_booking_name(name)
     phone = normalize_phone(phone)
     normalized_email = normalize_email(email) if email else ""
@@ -32,7 +33,8 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
         return {"ok": False, "error": "Data o ora non valide."}
     notes = notes.strip()
     fingerprint = hashlib.sha256(json.dumps([name, phone, normalized_email, date, time,
-        party_size, notes, privacy, marketing], ensure_ascii=False).encode()).hexdigest()
+        party_size, notes, privacy, marketing, booking_type], ensure_ascii=False).encode()).hexdigest()
+    legacy_fingerprint = hashlib.sha256(json.dumps([name,phone,normalized_email,date,time,party_size,notes,privacy,marketing],ensure_ascii=False).encode()).hexdigest()
     with db(write=True) as c:
         c.execute("SET LOCAL statement_timeout = '8000ms'")
         previous = c.execute(
@@ -40,24 +42,24 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
             "JOIN public.bookings b ON b.id=r.booking_id WHERE r.request_id=%s", (request_id,),
         ).fetchone()
         if previous:
-            if previous['fingerprint'] != fingerprint:
+            if previous['fingerprint'] != fingerprint and not (booking_type=='normale' and previous['fingerprint']==legacy_fingerprint):
                 return {"ok": False, "error": "Richiesta già utilizzata con altri dati. Ricarica la pagina."}
-            return {"ok": True, "booking_id": previous['id'], "status": previous['status'], "replayed": True}
-        dt, error = _validate(date, time, party_size)
+            return {"ok": True, "booking_id": previous['id'], "status": previous['status'], "replayed": True, "booking_type": booking_type, "management_url": issue_management_link(c,previous['id'])}
+        dt, error = _validate(date, time, party_size, booking_type)
         if error:
             return {"ok": False, "error": error}
         if len(_upcoming_for_phone(c, phone)) >= MAX_ACTIVE_PER_PHONE:
             return {"ok": False, "error": "Questo telefono ha già due prenotazioni attive. Per altre chiamaci."}
-        status = c.execute("SELECT private.online_day_status(%s,%s,NULL) AS status", (date,party_size)).fetchone()['status']
+        status = c.execute("SELECT private.online_slot_status(%s,%s,%s,%s,NULL) AS status", (date,time,party_size,booking_type)).fetchone()['status']
         if status != 'available':
             return {"ok": False, "error": "Disponibilità cambiata o non verificabile. Aggiorna il calendario o chiamaci."}
         saved = c.execute(
             "INSERT INTO public.bookings(name,email,phone,booking_date,booking_time,party_size,notes,"
-            "tables,status,source,reminder_status,privacy_accepted_at,privacy_version) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,'','confirmed','booking','skipped',now(),%s) RETURNING id,tables,status",
-            (name,normalized_email,phone,date,time,party_size,notes,PRIVACY_VERSION),
+            "tables,status,source,reminder_status,privacy_accepted_at,privacy_version,booking_type) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,'','confirmed','booking','skipped',now(),%s,%s) RETURNING id,tables,status,booking_type",
+            (name,normalized_email,phone,date,time,party_size,notes,PRIVACY_VERSION,booking_type),
         ).fetchone()
-        if saved['tables'] or saved['status'] != 'confirmed':
+        if saved['status'] != 'confirmed' or (booking_type == 'normale' and not saved['tables']) or (booking_type == 'dopocena' and saved['tables']):
             raise RuntimeError('Online booking SQL not installed correctly')
         c.execute("INSERT INTO private.online_booking_receipts(request_id,booking_id,fingerprint) VALUES (%s,%s,%s)",
                   (request_id,saved['id'],fingerprint))
@@ -74,4 +76,4 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
                           "consenso_versione,privacy_versione,risposta,consenso_data,scadenza_consenso,"
                           "rinnovi,registrato_da,fonte,updated_at) VALUES (%s,%s,%s,'whatsapp',%s,%s,%s,"
                           "'Sì, checkbox sul sito',now(),now()+interval '24 months',1,'sito','booking',now())", values)
-        return {"ok": True, "booking_id": saved['id'], "status": 'confirmed', "replayed": False}
+        return {"ok": True, "booking_id": saved['id'], "status": 'confirmed', "replayed": False, "booking_type": booking_type, "management_url": issue_management_link(c,saved['id'])}

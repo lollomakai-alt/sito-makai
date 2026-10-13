@@ -26,6 +26,8 @@ const MenuDetailPage = lazy(() => import("./pages/MenuDetailPage"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
 
+const BookingManagementPage = lazy(() => import("./pages/BookingManagementPage"));
+
 function PageFallback() {
   return (
     <main
@@ -66,6 +68,7 @@ function AppContent() {
   let page = null;
   if (isGalleryPage) page = <GalleryPage containerRef={containerRef} />;
   else if (isAboutPage) page = <AboutPage containerRef={containerRef} />;
+  else if (currentPath === "/prenotazioni/gestisci") page = <BookingManagementPage containerRef={containerRef} />;
   else if (currentPath === "/prenotazioni") page = <BookingPage containerRef={containerRef} />;
   else if (isPrivacyPage) page = <Privacy />;
   else if (menuPage) page = <MenuDetailPage containerRef={containerRef} page={menuPage} />;
