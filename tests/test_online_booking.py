@@ -15,6 +15,7 @@ class OnlineTests(unittest.TestCase):
             def execute(_,sql,args=None): self.calls.append((sql,args)); return _
             def fetchone(_):
                 sql=self.calls[-1][0]
+                if 'private.site_maintenance' in sql:return {'active':False}
                 if 'online_booking_receipts r' in sql:return previous
                 if 'online_slot_status' in sql:return {'status':status}
                 if 'INSERT INTO public.bookings' in sql:return {'id':42,'tables':assigned,'status':'confirmed'}
@@ -64,7 +65,8 @@ class OnlineTests(unittest.TestCase):
                 if 'private.online_slot_status' in sql:
                     raise RuntimeError('function private.online_slot_status does not exist')
                 return self
-            def fetchone(self):return None
+            def fetchone(self):
+                return {'active':False} if 'private.site_maintenance' in statements[-1] else None
         @contextmanager
         def database(write=False):
             self.assertTrue(write)

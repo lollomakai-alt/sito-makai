@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import usePageMotion from "./hooks/usePageMotion";
 
 import "./styles/app.css";
@@ -10,6 +10,7 @@ import "./styles/galleria.css";
 import "./styles/contatti.css";
 import "./styles/chat.css";
 import "./styles/privacy.css";
+import "./styles/maintenance.css";
 
 import AboutSection from "./components/AboutSection";
 import ChatWidget from "./components/ChatWidget";
@@ -19,6 +20,7 @@ import HeroSection from "./components/HeroSection";
 import HomeMenuSection from "./components/HomeMenuSection";
 import SiteNav from "./components/SiteNav";
 import { getMenuPage } from "./data/siteContent";
+import MaintenancePage from "./pages/MaintenancePage";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
@@ -52,6 +54,26 @@ function AppContent() {
   const { language } = useLanguage();
   const [activeSection] = useState("about");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [maintenance, setMaintenance] = useState("loading");
+
+  useEffect(() => {
+    let current = true;
+    async function refreshMaintenance() {
+      try {
+        const response = await fetch("/api/site-maintenance", { cache: "no-store" });
+        if (!response.ok) throw new Error("Maintenance status unavailable");
+        const state = await response.json();
+        if (typeof state.active !== "boolean") throw new Error("Invalid maintenance status");
+        if (current) setMaintenance(state.active ? "active" : "inactive");
+      } catch {
+        if (current) setMaintenance("active");
+      }
+    }
+    refreshMaintenance();
+    const timer = window.setInterval(refreshMaintenance, 30000);
+    document.addEventListener("visibilitychange", refreshMaintenance);
+    return () => { current = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshMaintenance); };
+  }, []);
 
   const currentPath = window.location.pathname.replace(/\/$/, "") || "/";
   const menuPage = getMenuPage(currentPath, language);
@@ -59,7 +81,10 @@ function AppContent() {
   const isAboutPage = currentPath === "/chi-siamo";
   const isPrivacyPage = currentPath === "/privacy";
 
-  usePageMotion(containerRef, currentPath);
+  usePageMotion(containerRef, currentPath, maintenance);
+
+  if (maintenance === "loading") return <PageFallback />;
+  if (maintenance === "active" && currentPath !== "/prenotazioni/gestisci" && currentPath !== "/privacy") return <MaintenancePage />;
 
   function closeChat() {
     setIsChatOpen(false);

@@ -1,5 +1,6 @@
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
+import { contactInfo } from "../data/contactInfo";
 
 const mapsUrl = "https://www.google.com/maps/place//data=!4m2!3m1!1s0x132f602bc97659d1:0x91e31e79d05bc2c6?sa=X&ved=1t:8290&ictx=111";
 
@@ -27,7 +28,7 @@ export default function ContactsSection() {
             <div className="contact-item">
               <span className="contact-label">{copy.address}</span>
               <a href={mapsUrl} target="_blank" rel="noreferrer">
-                Via Braccio da Montone, 3/B, 00100 Roma RM
+                {contactInfo.address}
               </a>
               <a className="maps-link" href={mapsUrl} target="_blank" rel="noreferrer">
                 {copy.maps}
@@ -35,18 +36,18 @@ export default function ContactsSection() {
             </div>
             <div className="contact-item">
               <span className="contact-label">{copy.phone}</span>
-              <a href="tel:+393397514140">339 751 4140</a>
+              <a href={contactInfo.phoneHref}>{contactInfo.phoneDisplay}</a>
             </div>
             <div className="contact-item">
               <span className="contact-label">{copy.email}</span>
-              <a href="mailto:makairoma@gmail.com">makairoma@gmail.com</a>
+              <a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a>
             </div>
           </address>
           <a className="contacts-booking-button" href="/prenotazioni">
             {copy.booking}
           </a>
           <div className="social-links" aria-label={copy.socialLabel}>
-            <a href="https://wa.me/393397514140" target="_blank" rel="noreferrer">
+            <a href={contactInfo.whatsappHref} target="_blank" rel="noreferrer">
               WhatsApp
             </a>
             <a href="https://www.instagram.com/makai_pigneto/" target="_blank" rel="noreferrer">

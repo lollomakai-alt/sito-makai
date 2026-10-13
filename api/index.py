@@ -30,6 +30,7 @@ from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
 from booking_communications import router as communications_router, send_new_online_booking_email
 from booking_push import send_new_online_booking_push
+from maintenance_mode import router as maintenance_router, public_status, MaintenanceActive
 from bookings.maintenance import cleanup_loop
 from automatic_chat import answer_chat
 from config import MAX_PARTY_SIZE, LOCAL_PHONE, MAX_ADVANCE_DAYS
@@ -65,6 +66,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Makai Grand Line API", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(communications_router)
+app.include_router(maintenance_router)
 
 
 @app.middleware("http")
@@ -212,6 +214,9 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
                 except Exception:
                     logger.warning('Conferma email automatica non confermata; prenotazione salvata.')
         return {key:value for key,value in result.items() if key != 'booking_id'}
+    except MaintenanceActive:
+        raise HTTPException(status_code=503, detail="Le prenotazioni online sono temporaneamente sospese.",
+                            headers={"Retry-After": "300"}) from None
     except HTTPException:
         raise
     except Exception as error:
@@ -220,6 +225,15 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
             raise HTTPException(status_code=409, detail="Disponibilità cambiata. Aggiorna il calendario o contatta il locale.") from None
         logger.warning("Salvataggio prenotazione online non disponibile.")
         raise HTTPException(status_code=503, detail="Salvataggio non confermato. Riprova con gli stessi dati.") from None
+
+
+@app.get("/api/site-maintenance")
+def site_maintenance_status(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return public_status()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Stato manutenzione non disponibile.") from None
 
 
 @app.get("/api/booking-settings")
@@ -234,7 +248,12 @@ def public_booking_availability(request: Request, response: Response,
     check_rate_limit(request)
     response.headers["Cache-Control"] = "no-store"
     try:
+        if public_status()["active"]:
+            raise MaintenanceActive()
         return month_availability(month, party_size, booking_type, booking_time)
+    except MaintenanceActive:
+        raise HTTPException(status_code=503, detail="Le prenotazioni online sono temporaneamente sospese.",
+                            headers={"Retry-After": "300"}) from None
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     except Exception as error:

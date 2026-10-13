@@ -9,7 +9,7 @@ export function sectionScrollTop(target, navHeight, scrollY, maxScroll) {
   return Math.max(0, Math.min(maxScroll, target.getBoundingClientRect().top + scrollY - navHeight));
 }
 
-export default function usePageMotion(containerRef, currentPath) {
+export default function usePageMotion(containerRef, currentPath, maintenance) {
   useLayoutEffect(() => {
     const root = containerRef.current;
     if (!root) return undefined;
@@ -187,5 +187,5 @@ export default function usePageMotion(containerRef, currentPath) {
       if (previousOffset) root.style.setProperty("--site-nav-offset", previousOffset);
       else root.style.removeProperty("--site-nav-offset");
     };
-  }, [containerRef, currentPath]);
+  }, [containerRef, currentPath, maintenance]);
 }

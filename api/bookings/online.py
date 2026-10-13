@@ -8,6 +8,7 @@ from database import db
 from .validators import normalize_booking_name, normalize_phone, normalize_email, _validate
 from .service import _upcoming_for_phone
 from .customer import issue_management_link
+from maintenance_mode import ensure_online_open
 
 PRIVACY_VERSION = "2026-10-12-online-v2"
 MARKETING_VERSION = "2026-10-04-online-v1"
@@ -37,6 +38,7 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
     legacy_fingerprint = hashlib.sha256(json.dumps([name,phone,normalized_email,date,time,party_size,notes,privacy,marketing],ensure_ascii=False).encode()).hexdigest()
     with db(write=True) as c:
         c.execute("SET LOCAL statement_timeout = '8000ms'")
+        ensure_online_open(c)
         previous = c.execute(
             "SELECT r.fingerprint, b.id, b.status FROM private.online_booking_receipts r "
             "JOIN public.bookings b ON b.id=r.booking_id WHERE r.request_id=%s", (request_id,),
