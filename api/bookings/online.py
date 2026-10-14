@@ -24,6 +24,8 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
         return {"ok": False, "error": "Inserisci nome e cognome e contatti validi."}
     if privacy is not True or type(marketing) is not bool:
         return {"ok": False, "error": "Devi leggere l’informativa privacy. Marketing facoltativo."}
+    if booking_type == 'dopocena' and marketing:
+        return {"ok": False, "error": "Il consenso marketing potrà essere registrato dopo l’accettazione della richiesta."}
     if type(party_size) is not int or not 1 <= party_size <= 6 or len(notes) > 300:
         return {"ok": False, "error": "Coperti o note non validi."}
     try:
@@ -39,6 +41,46 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
     with db(write=True) as c:
         c.execute("SET LOCAL statement_timeout = '8000ms'")
         ensure_online_open(c)
+        if booking_type == 'dopocena':
+            previous_request = c.execute(
+                "SELECT fingerprint, status FROM private.online_dopocena_requests WHERE request_id=%s",
+                (request_id,),
+            ).fetchone()
+            if previous_request:
+                if previous_request['fingerprint'] != fingerprint:
+                    return {"ok": False, "error": "Richiesta già utilizzata con altri dati. Ricarica la pagina."}
+                return {"ok": True, "request_id": request_id, "status": previous_request['status'],
+                        "replayed": True, "booking_type": 'dopocena'}
+            dt, error = _validate(date, time, party_size, booking_type)
+            if error:
+                return {"ok": False, "error": error}
+            if len(_upcoming_for_phone(c, phone)) >= MAX_ACTIVE_PER_PHONE:
+                return {"ok": False, "error": "Questo telefono ha già due prenotazioni attive. Per altre chiamaci."}
+            slot_status = c.execute(
+                "SELECT private.online_slot_status(%s,%s,%s,%s,NULL) AS status",
+                (date, time, party_size, booking_type),
+            ).fetchone()['status']
+            if slot_status != 'manual_review':
+                return {"ok": False, "error": "Questa richiesta DOPOCENA non può essere inviata. Aggiorna il calendario o chiamaci."}
+            inserted = c.execute(
+                "INSERT INTO private.online_dopocena_requests "
+                "(request_id,fingerprint,name,email,phone,booking_date,booking_time,party_size,notes,privacy_accepted_at,privacy_version) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),%s) "
+                "ON CONFLICT (request_id) DO NOTHING RETURNING status",
+                (request_id, fingerprint, name, normalized_email, phone, date, time, party_size,
+                 notes, PRIVACY_VERSION),
+            ).fetchone()
+            if inserted:
+                return {"ok": True, "request_id": request_id, "status": 'pending',
+                        "replayed": False, "booking_type": 'dopocena'}
+            previous_request = c.execute(
+                "SELECT fingerprint, status FROM private.online_dopocena_requests WHERE request_id=%s",
+                (request_id,),
+            ).fetchone()
+            if not previous_request or previous_request['fingerprint'] != fingerprint:
+                return {"ok": False, "error": "Richiesta già utilizzata con altri dati. Ricarica la pagina."}
+            return {"ok": True, "request_id": request_id, "status": previous_request['status'],
+                    "replayed": True, "booking_type": 'dopocena'}
         previous = c.execute(
             "SELECT r.fingerprint, b.id, b.status FROM private.online_booking_receipts r "
             "JOIN public.bookings b ON b.id=r.booking_id WHERE r.request_id=%s", (request_id,),

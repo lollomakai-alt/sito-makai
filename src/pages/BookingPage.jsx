@@ -3,7 +3,7 @@ import SiteNav from "../components/SiteNav";
 import { useLanguage } from "../i18n/LanguageContext";
 import "../styles/prenotazioni.css";
 
-// The server rechecks availability and saves a confirmed booking without tables.
+// The server rechecks availability; CENA is confirmed, DOPOCENA enters manual review.
 export default function BookingPage({ containerRef }) {
   const { language } = useLanguage();
   const t = (it, en) => language === "en" ? en : it;
@@ -107,7 +107,7 @@ export default function BookingPage({ containerRef }) {
         ? t('Risposta non ricevuta. Riprova con gli stessi dati: la richiesta non verrà duplicata.', 'No response received. Retry with the same details: your request will not be duplicated.') : error.message);
     } finally { window.clearTimeout(timer); submitting.current = false; setSaving(false); }
   }
-  const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available") };
+  const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available"), manual_review: t("Richiesta da confermare", "Request needs confirmation") };
 
   return (
     <div ref={containerRef} className="scroll-container booking-page">
@@ -157,11 +157,12 @@ export default function BookingPage({ containerRef }) {
                   const date = new Date(month.getFullYear(), month.getMonth(), index + 1);
                   const state = status(date);
                   const active = selected?.getTime() === date.getTime();
-                  return <button key={index} type="button" className={`booking-day ${state}`} disabled={loading || !currentAvailability || state !== "available"} aria-pressed={active} aria-label={`${formatDate(date)}: ${labels[state]}`} onClick={() => { setSelected(date); setReviewed(false); }}><b>{index + 1}</b><span aria-hidden="true">{active ? "✓" : state === "available" ? "•" : state === "full" ? "×" : "–"}</span></button>;
+                  const selectable = state === "available" || (bookingType === "dopocena" && state === "manual_review");
+                  return <button key={index} type="button" className={`booking-day ${state}`} disabled={loading || !currentAvailability || !selectable} aria-pressed={active} aria-label={`${formatDate(date)}: ${labels[state]}`} onClick={() => { setSelected(date); setReviewed(false); }}><b>{index + 1}</b><span aria-hidden="true">{active ? "✓" : selectable ? "•" : state === "full" ? "×" : "–"}</span></button>;
                 })}
               </div>
-              <div className="booking-legend"><span>🟢 {t("Disponibile", "Available")}</span><span>🔴 {t("Non disponibile per il gruppo", "Unavailable for your group")}</span><span>— {t("Chiuso / non prenotabile", "Closed / unavailable")}</span></div>
-              {currentAvailability && !Object.values(currentAvailability.days).includes("available") && <p className="booking-help">{t("Nessuna data disponibile in questo mese per il vostro gruppo. Controlla il mese successivo o chiamaci.", "No dates available this month for your group. Check the next month or call us.")}</p>}
+              <div className="booking-legend"><span>🟢 {t("Disponibile", "Available")}</span>{bookingType === "dopocena" && <span>🟡 {t("Richiesta da confermare", "Request needs confirmation")}</span>}<span>🔴 {t("Non disponibile per il gruppo", "Unavailable for your group")}</span><span>— {t("Chiuso / non prenotabile", "Closed / unavailable")}</span></div>
+              {currentAvailability && !Object.values(currentAvailability.days).some(state => state === "available" || bookingType === "dopocena" && state === "manual_review") && <p className="booking-help">{t("Nessuna data disponibile in questo mese per il vostro gruppo. Controlla il mese successivo o chiamaci.", "No dates available this month for your group. Check the next month or call us.")}</p>}
               <p className="booking-date-feedback" aria-live="polite">{selected ? formatDate(selected) : ""}</p>
             </section>}
           </div>
@@ -179,20 +180,26 @@ export default function BookingPage({ containerRef }) {
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
             <label className="booking-check booking-privacy"><input type="checkbox" required name="privacy" /><span>{t("Ho letto l’", "I have read the ")}<a href="/privacy" target="_blank" rel="noopener noreferrer">{t("informativa privacy", "privacy policy")}</a> * <small>{t("(si apre in una nuova scheda)", "(opens in a new tab)")}</small></span></label>
-            <section className="booking-offers" aria-labelledby="booking-offers-title">
+            {bookingType === "normale" ? <section className="booking-offers" aria-labelledby="booking-offers-title">
               <h2 id="booking-offers-title">{t("SCONTI E OFFERTE ESCLUSIVE", "EXCLUSIVE DISCOUNTS & OFFERS")}</h2>
               <label className="booking-check"><input type="checkbox" name="marketing" /><span>{t("Voglio ricevere sconti, offerte e novità di Makai tramite WhatsApp.", "I would like to receive Makai discounts, offers and news via WhatsApp.")}</span></label>
               <p className="booking-help">{t("Facoltativo. Puoi prenotare anche senza aderire.", "Optional. You can book without opting in.")}</p>
-            </section>
+            </section> : <p className="booking-help">{t("Il DOPOCENA è una richiesta in attesa: non è ancora una prenotazione confermata. Lo staff ti risponderà dopo aver verificato la disponibilità.", "DOPOCENA is a request awaiting review, not a confirmed booking. Staff will reply after checking availability.")}</p>}
             <div className="booking-summary">
               <h2>{t("Il tuo riepilogo", "Your summary")}</h2>
               <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")} · {bookingTime || "—"}</p>
-              <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Salvataggio…", "Saving…") : receipt ? t("Richiesta registrata", "Request recorded") : t("Conferma prenotazione", "Confirm booking")}</button>
+              <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Salvataggio…", "Saving…") : receipt ? t("Richiesta registrata", "Request recorded") : bookingType === "dopocena" ? t("Invia richiesta DOPOCENA", "Send DOPOCENA request") : t("Conferma prenotazione", "Confirm booking")}</button>
               {saveError && <p role="alert" className="booking-result">{saveError}</p>}
               {receipt?.management_url && <p className="booking-result"><a href={receipt.management_url}>Gestisci o riconferma la prenotazione</a></p>}
               {reviewed && receipt && <p className="booking-result" role="status">{receipt.status === 'confirmed'
-                ? t(`Prenotazione confermata per ${guests} persone alle ${bookingTime}. ${bookingType === "normale" ? "Il tavolo è assegnato automaticamente." : "Il tavolo verrà assegnato quando disponibile."}`, `Booking confirmed for ${guests} guests at ${bookingTime}. ${bookingType === "normale" ? "Your table has been assigned." : "A table will be assigned when available."}`)
-                : t(`Richiesta già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
+                ? t(`Prenotazione confermata per ${guests} persone alle ${bookingTime}. Il tavolo è assegnato automaticamente.`, `Booking confirmed for ${guests} guests at ${bookingTime}. Your table has been assigned.`)
+                : receipt.status === 'pending'
+                  ? t(`Richiesta DOPOCENA ricevuta per ${guests} persone alle ${bookingTime}. Non è ancora confermata: lo staff ti risponderà dopo aver verificato la disponibilità.`, `DOPOCENA request received for ${guests} guests at ${bookingTime}. It is not confirmed yet; staff will reply after checking availability.`)
+                  : receipt.status === 'accepted'
+                    ? t("La richiesta DOPOCENA risulta accettata dallo staff. Riceverai la risposta del locale.", "Staff accepted your DOPOCENA request. You will receive the venue's reply.")
+                    : receipt.status === 'rejected'
+                      ? t("La richiesta DOPOCENA non è stata accettata. Il locale ti risponderà sul recapito indicato.", "Your DOPOCENA request was not accepted. The venue will reply using the contact details provided.")
+                      : t(`Richiesta già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
 
             </div>
           </div>}

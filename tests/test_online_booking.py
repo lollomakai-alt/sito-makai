@@ -77,4 +77,53 @@ class OnlineTests(unittest.TestCase):
                     '11111111-1111-4111-8111-111111111111',privacy=True)
         self.assertFalse(any('INSERT INTO public.bookings' in sql for sql in statements))
 
+    def test_dopocena_creates_pending_request_without_booking_or_marketing(self):
+        statements=[]
+        class Connection:
+            def execute(_,sql,args=None): statements.append((sql,args)); return _
+            def fetchone(_):
+                sql=statements[-1][0]
+                if 'private.site_maintenance' in sql:return {'active':False}
+                if 'FROM private.online_dopocena_requests' in sql:return None
+                if 'private.online_slot_status' in sql:return {'status':'manual_review'}
+                if 'INSERT INTO private.online_dopocena_requests' in sql:return {'status':'pending'}
+                raise AssertionError(sql)
+        @contextmanager
+        def database(write=False): self.assertTrue(write); yield Connection()
+        request_id='11111111-1111-4111-8111-111111111111'
+        with patch('bookings.online.db',database),patch('bookings.online._upcoming_for_phone',return_value=[]),patch('bookings.validators.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
+            result=create_online_booking('Mario Rossi','3331234567','2026-10-06','23:00',2,request_id,privacy=True,booking_type='dopocena')
+        self.assertEqual(result,{'ok':True,'request_id':request_id,'status':'pending','replayed':False,'booking_type':'dopocena'})
+        insert=next((sql,args) for sql,args in statements if 'INSERT INTO private.online_dopocena_requests' in sql)
+        self.assertIn('ON CONFLICT (request_id) DO NOTHING',insert[0])
+        self.assertFalse(any('INSERT INTO public.bookings' in sql or 'online_booking_receipts' in sql for sql,args in statements))
+        self.assertFalse(any('marketing_contacts' in sql for sql,args in statements))
+
+    def test_dopocena_retry_replays_pending_request_and_rejects_changed_payload(self):
+        import hashlib, json
+        fingerprint=hashlib.sha256(json.dumps(
+            ['Mario Rossi','+393331234567','','2026-10-06','23:00',2,'',True,False,'dopocena'],ensure_ascii=False).encode()).hexdigest()
+        previous={'fingerprint':fingerprint,'status':'pending'}
+        statements=[]
+        class Connection:
+            def execute(_,sql,args=None): statements.append((sql,args)); return _
+            def fetchone(_):
+                if 'private.site_maintenance' in statements[-1][0]:return {'active':False}
+                if 'FROM private.online_dopocena_requests' in statements[-1][0]:return previous
+                raise AssertionError(statements[-1][0])
+        @contextmanager
+        def database(write=False): self.assertTrue(write); yield Connection()
+        with patch('bookings.online.db',database):
+            replay=create_online_booking('Mario Rossi','3331234567','2026-10-06','23:00',2,'11111111-1111-4111-8111-111111111111',privacy=True,booking_type='dopocena')
+            changed=create_online_booking('Mario Rossi','3331234567','2026-10-06','23:30',2,'11111111-1111-4111-8111-111111111111',privacy=True,booking_type='dopocena')
+        self.assertTrue(replay['replayed']); self.assertEqual(replay['status'],'pending')
+        self.assertFalse(changed['ok'])
+        self.assertEqual(sum('private.online_slot_status' in sql for sql,args in statements),0)
+
+    def test_dopocena_does_not_collect_marketing_before_acceptance(self):
+        with patch('bookings.online.db') as database:
+            result=create_online_booking('Mario Rossi','3331234567','2026-10-06','23:00',2,
+                '11111111-1111-4111-8111-111111111111',privacy=True,marketing=True,booking_type='dopocena')
+        self.assertFalse(result['ok']); database.assert_not_called()
+
 if __name__=='__main__':unittest.main()

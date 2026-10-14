@@ -75,3 +75,29 @@ _13 ottobre 2026; Drive `ecosistema makai/sito makai`._
 - Il backend apre `DATABASE_URL` con psycopg; il file `.env` locale indica un utente di connessione con prefisso `postgres`. Tale ruolo è proprietario/superuser atteso per la creazione da SQL Editor/migrazione, quindi le query private funzionano senza concedere accesso al client `service_role`. La configurazione effettiva Vercel e i privilegi live non sono stati letti.
 - **Verifiche codice:** 23 test Python mirati, 3 test UI Sito, 9 test gateway/impostazioni Agenda e `git diff --check` in entrambi i repository superati. Le prove controllano blocco e fail-closed ma non sostituiscono lo smoke test autenticato contro staging.
 - **Problemi concreti:** nessuno rilevato nel collegamento e nelle transizioni simulate. **DA FARE:** prima di applicare la migrazione verificare che `DATABASE_URL` dell'ambiente di deploy usi il ruolo DB previsto e controllare lettura/attivazione/storico in staging. DB live invariato; nessun deploy.
+
+## Diagnosi disponibilità e attivazione manutenzione, 14 ottobre 2026
+- **VERIFICATO IN PRODUZIONE:** prima dell'attivazione, l'endpoint pubblico di disponibilità restituiva HTTP 503 perché `private.online_slot_status` non esisteva nello schema live verificato in sola lettura. La risposta chiedeva di riprovare; il flusso pubblico non poteva verificare date disponibili.
+- **VERIFICATO IN PRODUZIONE:** lo stato manutenzione iniziale era `false`; dopo l'attivazione autorizzata dal pannello Agenda è `true`, con evento di attivazione presente nello storico amministrativo. La pagina pubblica ora mostra «La ciurma Makai è ai lavori!» e spiega che le prenotazioni online sono temporaneamente sospese.
+- **Impatto corrente:** le prenotazioni online restano sospese intenzionalmente mentre la manutenzione è attiva. La funzione planner mancante è il problema tecnico originario e va ripristinata/verificata prima di disattivare la manutenzione.
+- **Database:** nessuna migrazione o modifica di schema è stata applicata. L'unica mutazione live eseguita è l'attivazione tramite il pannello, con la corrispondente registrazione nello storico; le prenotazioni esistenti non sono state modificate.
+- **DEPLOYATO:** le API Sito e la pagina manutenzione erano già presenti sul dominio pubblico durante la verifica; la pagina è stata controllata nel browser dopo l'attivazione. **DA FARE:** revisionare e autorizzare la migrazione che ripristina `private.online_slot_status`, poi provare l'endpoint di disponibilità prima di riaprire il servizio.
+
+## Analisi motore coordinato v2 — 14 ottobre 2026
+- **DA FARE:** adeguare API/UI Sito per le richieste DOPOCENA in attesa, idempotenza e risposta successiva di accettazione/rifiuto; il flusso attuale inserisce direttamente booking `confirmed` e dipende da `private.online_slot_status`, assente nell’ultimo inventario live di sola lettura.
+- **IMPLEMENTATO LOCALMENTE:** nessuna modifica al codice Sito. Rapporto di verifica nel workspace Codex.
+- **Verifiche/limiti:** nessun test v2; nessuna chiamata live di prenotazione. Il database live non è stato modificato.
+- **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** solo schema/metadati in sola lettura.
+
+
+## Migrazione DB booking engine v2 — 14 ottobre 2026
+- **DEPLOYATO:** migrazione `20261014002635` applicata a Supabase Production; conteggio confermato a 213 prenotazioni, RLS attiva, manutenzione attiva. Capienza fisica CENA 26; DOPOCENA in `manual_review`, senza assegnazione automatica. Nessuna prenotazione esistente aggiornata.
+- **DA FARE prima della riapertura:** aggiornare API online affinché invii le richieste DOPOCENA alla nuova coda con idempotenza; l’API attuale non usa la coda e non è compatibile con il nuovo stato. Eseguire test end-to-end dopo la modifica.
+- Nessun codice Sito modificato, nessun deploy applicativo. Rollback autonomo preparato e provato in PostgreSQL isolato, non applicato.
+
+
+## Integrazione DOPOCENA v2 — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** l'API del Sito invia DOPOCENA alla coda privata v2 con retry idempotente; non crea subito `public.bookings`, non raccoglie il consenso marketing e non invia email/push. Il flusso CENA resta immediato con assegnazione SQL esistente. La pagina espone lo stato di richiesta non confermata.
+- **Verifiche locali:** suite Python 146/146, JavaScript 9/9, build Vite superata; prova end-to-end dell'API contro PostgreSQL temporaneo: richiesta `pending`, replay idempotente, nessuna prenotazione; `git diff --check` superato.
+- **DA FARE:** pubblicare insieme a Agenda; provare il flusso su Production con manutenzione ancora attiva. Messaggi di esito via email/WhatsApp non implementati in questo intervento.
+- **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** database v2 verificato nel registro precedente; API/UI Sito non verificate live. Nessun commit, push o deploy.

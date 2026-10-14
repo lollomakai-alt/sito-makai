@@ -201,6 +201,8 @@ def public_create_booking(body: OnlineBookingBody, request: Request, response: R
             raise HTTPException(status_code=409, detail=result["error"])
         if result["replayed"]:
             response.status_code = 200
+        elif result['status'] == 'pending':
+            response.status_code = 202
         elif result['status'] == 'confirmed':
             # The booking transaction has committed; push failures must not undo it.
             try:

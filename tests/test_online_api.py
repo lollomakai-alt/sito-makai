@@ -20,6 +20,17 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(create.call_args.kwargs['marketing'],False)
         with patch('index.create_online_booking',return_value={'ok':True,'booking_id':42,'status':'confirmed','replayed':True}):
             self.assertEqual(self.client.post('/api/bookings',json=self.body).status_code,200)
+
+    def test_dopocena_request_returns_accepted_http_without_confirmation_notifications(self):
+        result={'ok':True,'request_id':'11111111-1111-4111-8111-111111111111',
+                'status':'pending','replayed':False,'booking_type':'dopocena'}
+        with patch('index.create_online_booking',return_value=result), \
+                patch('index.send_new_online_booking_push') as push, \
+                patch('index.send_new_online_booking_email') as email:
+            response=self.client.post('/api/bookings',json=self.body|{'booking_type':'dopocena','time':'23:00'})
+        self.assertEqual(response.status_code,202)
+        self.assertEqual(response.json()['status'],'pending')
+        push.assert_not_called(); email.assert_not_called()
     def test_strict_fields_reject_injected_state_and_fake_consent_before_service(self):
         with patch('index.create_online_booking') as create:
             for extra in [{'tables':'12'},{'source':'agenda'},{'status':'arrived'},{'user_id':'someone'},{'party_size':True},{'party_size':7},{'privacy':'true'},{'marketing':1}]:
