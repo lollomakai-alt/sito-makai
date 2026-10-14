@@ -122,9 +122,33 @@ export default function BookingPage({ containerRef }) {
           <fieldset disabled={saving || Boolean(receipt)} style={{ display: "contents" }}>
           <div className="booking-card">
             <section aria-labelledby="booking-guests-title">
-              <label className="booking-field">{t("Servizio", "Service")}<select value={bookingType} onChange={event => { setBookingType(event.target.value); setBookingTime(''); setConfirmedGuests(null); setSelected(null); }}><option value="normale">CENA · 19:00–22:30</option><option value="dopocena">DOPOCENA · 22:30–00:00</option></select></label>
-              <label className="booking-field">{t("Orario", "Time")}<select required value={bookingTime} onChange={event => { setBookingTime(event.target.value); setSelected(null); }}><option value="">{t("Scegli l’orario", "Choose a time")}</option>{(settings?.services?.[bookingType] || []).map(time => <option key={time} value={time}>{time === '00:00' ? t('00:00 · giorno successivo','00:00 · following day') : time}</option>)}</select></label>
-              <p className="booking-help">{t("Cucina fino alle 23:30. Il giorno selezionato è la giornata di servizio; 00:00 indica la mezzanotte successiva.","Kitchen closes at 23:30. The selected date is the service day; 00:00 means the following midnight.")}</p>
+              <fieldset className="booking-choice-group">
+                <legend>{t("Scegli la tua serata", "Choose your evening")}</legend>
+                <div className="booking-service-options">
+                  {[
+                    { value: "normale", title: "CENA", hours: "19:00–22:30", detail: t("A tavola al Makai", "Dinner at Makai") },
+                    { value: "dopocena", title: "DOPOCENA", hours: "22:30–00:00", detail: t("Su richiesta · conferma dello staff", "On request · staff confirmation") },
+                  ].map(service => <label className="booking-choice" key={service.value}>
+                    <input type="radio" name="booking-service" value={service.value} checked={bookingType === service.value} onChange={() => { setBookingType(service.value); setBookingTime(''); setConfirmedGuests(null); setSelected(null); setReviewed(false); }} />
+                    <span className="booking-choice-face booking-service-face">
+                      <span className="booking-service-heading"><strong>{service.title}</strong><span className="booking-choice-check" aria-hidden="true">✓</span></span>
+                      <span className="booking-service-hours">{service.hours}</span>
+                      <small>{service.detail}</small>
+                    </span>
+                  </label>)}
+                </div>
+              </fieldset>
+              <fieldset className="booking-choice-group" aria-describedby="booking-time-help">
+                <legend>{t("A che ora arrivate?", "What time will you arrive?")}</legend>
+                <div className="booking-time-options">
+                  {(settings?.services?.[bookingType] || []).map(time => <label className="booking-choice" key={time}>
+                    <input type="radio" name="time" required value={time} checked={bookingTime === time} onChange={() => { setBookingTime(time); setSelected(null); setReviewed(false); }} />
+                    <span className="booking-choice-face booking-time-face"><strong>{time}</strong>{time === '00:00' && <small>{t('Giorno dopo', 'Next day')}</small>}</span>
+                  </label>)}
+                </div>
+                {!settings && !settingsError && <p className="booking-help" role="status">{t("Caricamento orari…", "Loading times…")}</p>}
+              </fieldset>
+              <p id="booking-time-help" className="booking-help">{t("Cucina fino alle 23:30. Il giorno selezionato è la giornata di servizio; 00:00 indica la mezzanotte successiva.","Kitchen closes at 23:30. The selected date is the service day; 00:00 means the following midnight.")}</p>
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
               <div className="booking-guest-stepper" role="group" aria-labelledby="booking-guests-title">
                 <button type="button" disabled={guests <= 1} aria-label={t("Una persona in meno", "Remove one guest")} onClick={() => { setGuests(value => Math.max(1, value - 1)); setReviewed(false); }}>−</button>
@@ -171,20 +195,18 @@ export default function BookingPage({ containerRef }) {
             <div className="booking-fields">
               <label className="booking-field">{t("Nome e cognome", "Full name")} *<input name="name" autoComplete="name" required minLength="2" maxLength="60" placeholder={t("Nome e cognome", "Full name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
-              <label className="booking-field">{t("Orario", "Time")} *<select name="time" required value={bookingTime} onChange={event => setBookingTime(event.target.value)}>
-                <option value="">{t("Scegli l’orario", "Choose a time")}</option>
-                {(settings?.services?.[bookingType] || []).map(time => <option key={time} value={time}>{time}</option>)}
-              </select></label>
+              <div className="booking-field">{t("La tua scelta", "Your choice")}<p className="booking-selected-slot"><strong>{bookingType === "dopocena" ? "DOPOCENA" : "CENA"} · {bookingTime}</strong><small>{t("Puoi cambiare orario dai pulsanti sopra.", "You can change the time using the buttons above.")}</small></p></div>
               <label className="booking-field">{t("Email (facoltativa)", "Email (optional)")}<input name="email" type="email" autoComplete="email" maxLength="120" /></label>
               <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="300" /></label>
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
             <label className="booking-check booking-privacy"><input type="checkbox" required name="privacy" /><span>{t("Ho letto l’", "I have read the ")}<a href="/privacy" target="_blank" rel="noopener noreferrer">{t("informativa privacy", "privacy policy")}</a> * <small>{t("(si apre in una nuova scheda)", "(opens in a new tab)")}</small></span></label>
-            {bookingType === "normale" ? <section className="booking-offers" aria-labelledby="booking-offers-title">
+            <section className="booking-offers" aria-labelledby="booking-offers-title">
               <h2 id="booking-offers-title">{t("SCONTI E OFFERTE ESCLUSIVE", "EXCLUSIVE DISCOUNTS & OFFERS")}</h2>
               <label className="booking-check"><input type="checkbox" name="marketing" /><span>{t("Voglio ricevere sconti, offerte e novità di Makai tramite WhatsApp.", "I would like to receive Makai discounts, offers and news via WhatsApp.")}</span></label>
               <p className="booking-help">{t("Facoltativo. Puoi prenotare anche senza aderire.", "Optional. You can book without opting in.")}</p>
-            </section> : <p className="booking-help">{t("Il DOPOCENA è una richiesta in attesa: non è ancora una prenotazione confermata. Lo staff ti risponderà dopo aver verificato la disponibilità.", "DOPOCENA is a request awaiting review, not a confirmed booking. Staff will reply after checking availability.")}</p>}
+            </section>
+            {bookingType === "dopocena" && <p className="booking-help">{t("Il DOPOCENA è una richiesta in attesa: non è ancora una prenotazione confermata. Lo staff ti risponderà dopo aver verificato la disponibilità.", "DOPOCENA is a request awaiting review, not a confirmed booking. Staff will reply after checking availability.")}</p>}
             <div className="booking-summary">
               <h2>{t("Il tuo riepilogo", "Your summary")}</h2>
               <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")} · {bookingTime || "—"}</p>

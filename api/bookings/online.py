@@ -15,6 +15,26 @@ MARKETING_VERSION = "2026-10-04-online-v1"
 MARKETING_TEXT = "Voglio ricevere sconti, offerte e novità di Makai tramite WhatsApp."
 
 
+def _record_online_marketing_consent(connection, name, phone, booking_id=None):
+    """Persist explicit site consent, its evidence and the existing 24-month expiry."""
+    existing = connection.execute(
+        "SELECT id FROM public.marketing_contacts WHERE phone=%s FOR UPDATE", (phone,)
+    ).fetchone()
+    values = (name, phone, booking_id, MARKETING_TEXT, MARKETING_VERSION, PRIVACY_VERSION)
+    if existing:
+        connection.execute(
+            "UPDATE public.marketing_contacts SET nome=%s,phone=%s,booking_id=COALESCE(%s,booking_id),canale='whatsapp',"
+            "consenso_testo=%s,consenso_versione=%s,privacy_versione=%s,risposta='Sì, checkbox sul sito',"
+            "consenso_data=now(),scadenza_consenso=now()+interval '24 months',revocato_il=NULL,"
+            "rinnovi=rinnovi+1,registrato_da='sito',updated_at=now() WHERE id=%s", values+(existing['id'],))
+    else:
+        connection.execute(
+            "INSERT INTO public.marketing_contacts(nome,phone,booking_id,canale,consenso_testo,"
+            "consenso_versione,privacy_versione,risposta,consenso_data,scadenza_consenso,"
+            "rinnovi,registrato_da,fonte,updated_at) VALUES (%s,%s,%s,'whatsapp',%s,%s,%s,"
+            "'Sì, checkbox sul sito',now(),now()+interval '24 months',1,'sito','booking',now())", values)
+
+
 def create_online_booking(name, phone, date, time, party_size, request_id,
                           privacy=False, marketing=False, email="", notes="", booking_type="normale"):
     name = normalize_booking_name(name)
@@ -24,8 +44,6 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
         return {"ok": False, "error": "Inserisci nome e cognome e contatti validi."}
     if privacy is not True or type(marketing) is not bool:
         return {"ok": False, "error": "Devi leggere l’informativa privacy. Marketing facoltativo."}
-    if booking_type == 'dopocena' and marketing:
-        return {"ok": False, "error": "Il consenso marketing potrà essere registrato dopo l’accettazione della richiesta."}
     if type(party_size) is not int or not 1 <= party_size <= 6 or len(notes) > 300:
         return {"ok": False, "error": "Coperti o note non validi."}
     try:
@@ -71,6 +89,8 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
                  notes, PRIVACY_VERSION),
             ).fetchone()
             if inserted:
+                if marketing:
+                    _record_online_marketing_consent(c, name, phone)
                 return {"ok": True, "request_id": request_id, "status": 'pending',
                         "replayed": False, "booking_type": 'dopocena'}
             previous_request = c.execute(
@@ -108,16 +128,5 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
         c.execute("INSERT INTO private.online_booking_receipts(request_id,booking_id,fingerprint) VALUES (%s,%s,%s)",
                   (request_id,saved['id'],fingerprint))
         if marketing:
-            existing = c.execute("SELECT id FROM public.marketing_contacts WHERE phone=%s FOR UPDATE", (phone,)).fetchone()
-            values = (name,phone,saved['id'],MARKETING_TEXT,MARKETING_VERSION,PRIVACY_VERSION)
-            if existing:
-                c.execute("UPDATE public.marketing_contacts SET nome=%s,phone=%s,booking_id=%s,canale='whatsapp',"
-                          "consenso_testo=%s,consenso_versione=%s,privacy_versione=%s,risposta='Sì, checkbox sul sito',"
-                          "consenso_data=now(),scadenza_consenso=now()+interval '24 months',revocato_il=NULL,"
-                          "rinnovi=rinnovi+1,registrato_da='sito',updated_at=now() WHERE id=%s", values+(existing['id'],))
-            else:
-                c.execute("INSERT INTO public.marketing_contacts(nome,phone,booking_id,canale,consenso_testo,"
-                          "consenso_versione,privacy_versione,risposta,consenso_data,scadenza_consenso,"
-                          "rinnovi,registrato_da,fonte,updated_at) VALUES (%s,%s,%s,'whatsapp',%s,%s,%s,"
-                          "'Sì, checkbox sul sito',now(),now()+interval '24 months',1,'sito','booking',now())", values)
+            _record_online_marketing_consent(c, name, phone, saved['id'])
         return {"ok": True, "booking_id": saved['id'], "status": 'confirmed', "replayed": False, "booking_type": booking_type, "management_url": issue_management_link(c,saved['id'])}

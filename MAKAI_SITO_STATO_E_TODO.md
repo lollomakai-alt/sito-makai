@@ -106,3 +106,18 @@ _13 ottobre 2026; Drive `ecosistema makai/sito makai`._
 - **DEPLOYATO:** commit `4922faddbd68e086ad1b3d93c89e156243020aa8` inviato a `origin/main`; stato Vercel del commit `success` con descrizione «Deployment has completed».
 - **VERIFICATO IN PRODUZIONE:** `GET https://www.makaipigneto.it/api/site-maintenance` ha risposto HTTP 200 con `{"active":true}` dopo il push. Non è stata inviata alcuna prenotazione live; il nuovo percorso DOPOCENA non è ancora verificato sul dominio.
 - **DA FARE:** controllo coordinato con Agenda e prova controllata CENA/DOPOCENA prima di disattivare stabilmente la manutenzione. `.engram ` preesistente esclusa dal commit.
+
+## Selezione servizio e orario a pulsanti — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** sostituiti i menu a tendina della pagina prenotazioni con due schede CENA/DOPOCENA e una griglia di orari. Selezione oro, spunta sul servizio, controlli radio nativi utilizzabili da tastiera, focus visibile e layout a tre colonne per gli orari su mobile. Gli slot continuano a provenire dalle impostazioni API; cambio servizio azzera orario e data, cambio orario azzera la data e richiede disponibilità aggiornata. Nei contatti compare il riepilogo al posto del secondo menu.
+- **Evidenze:** codice e diff ispezionati; build Vite riuscita (53 moduli), controllo whitespace superato. Nessun test automatico o controllo visuale browser/dispositivo eseguito in questo intervento.
+- **DA FARE:** controllo visuale e interazione su desktop/telefono, pubblicazione su richiesta. Nessuna modifica ad API, database o regole prenotazioni.
+- **DEPLOYATO:** no per questa modifica. **VERIFICATO IN PRODUZIONE:** no. Nessun commit o push.
+
+## Consenso marketing DOPOCENA e verifica chiusura CENA — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** il modulo mostra anche per DOPOCENA lo stesso consenso marketing facoltativo di CENA. La checkbox resta deselezionata; l'accettazione privacy rimane obbligatoria e separata.
+- L'API riusa il salvataggio CENA per testo/versione del consenso, prova della checkbox, timestamp e scadenza di 24 mesi. Per DOPOCENA il consenso viene registrato solo quando la nuova richiesta `pending` è inserita; non crea una prenotazione e i replay idempotenti non rinnovano il consenso.
+- **Verifica read-only dello schema live:** `marketing_contacts.booking_id` è nullable e timestamp/scadenza sono obbligatori; non serve una modifica SQL per registrare un consenso collegato a una richiesta non ancora accettata.
+- **Verifica read-only live:** `online_booking_closures` produce `closed` soltanto per `service='normale'`; DOPOCENA passa a `manual_review`. La chiusura del lunedì resta comune a entrambi e `private.site_maintenance.active` risulta `false` al controllo. Nessun dato è stato scritto nel database; non è stata inviata una prenotazione di prova.
+- **Verifiche locali:** test booking/API/disponibilità 27/27; suite Python completa 146/146; JavaScript 10/10; build Vite superata (53 moduli); `git diff --check` superato.
+- Il DOPOCENA resta in revisione manuale; questo cambiamento non introduce conferme o disdette automatiche, né email o WhatsApp automatici. Nessuna modifica al motore dei tavoli.
+- **DEPLOYATO:** no per il codice modificato. **VERIFICATO IN PRODUZIONE:** solo definizione SQL e nullable dello schema lette in sola lettura; UI/API aggiornate non verificate live. Nessun commit, push o deploy.

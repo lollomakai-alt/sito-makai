@@ -87,6 +87,7 @@ class OnlineTests(unittest.TestCase):
                 if 'FROM private.online_dopocena_requests' in sql:return None
                 if 'private.online_slot_status' in sql:return {'status':'manual_review'}
                 if 'INSERT INTO private.online_dopocena_requests' in sql:return {'status':'pending'}
+                if 'marketing_contacts WHERE' in sql:return None
                 raise AssertionError(sql)
         @contextmanager
         def database(write=False): self.assertTrue(write); yield Connection()
@@ -120,10 +121,28 @@ class OnlineTests(unittest.TestCase):
         self.assertFalse(changed['ok'])
         self.assertEqual(sum('private.online_slot_status' in sql for sql,args in statements),0)
 
-    def test_dopocena_does_not_collect_marketing_before_acceptance(self):
-        with patch('bookings.online.db') as database:
+    def test_optional_dopocena_marketing_records_evidence_and_24_month_expiry(self):
+        statements=[]
+        class Connection:
+            def execute(_,sql,args=None): statements.append((sql,args)); return _
+            def fetchone(_):
+                sql=statements[-1][0]
+                if 'private.site_maintenance' in sql:return {'active':False}
+                if 'FROM private.online_dopocena_requests' in sql:return None
+                if 'private.online_slot_status' in sql:return {'status':'manual_review'}
+                if 'INSERT INTO private.online_dopocena_requests' in sql:return {'status':'pending'}
+                if 'marketing_contacts WHERE' in sql:return None
+                raise AssertionError(sql)
+        @contextmanager
+        def database(write=False): self.assertTrue(write); yield Connection()
+        with patch('bookings.online.db',database),patch('bookings.online._upcoming_for_phone',return_value=[]),patch('bookings.validators.now_local',return_value=datetime(2026,10,3,12,tzinfo=TZ)):
             result=create_online_booking('Mario Rossi','3331234567','2026-10-06','23:00',2,
                 '11111111-1111-4111-8111-111111111111',privacy=True,marketing=True,booking_type='dopocena')
-        self.assertFalse(result['ok']); database.assert_not_called()
+        self.assertEqual(result['status'],'pending')
+        insert=next(sql for sql,args in statements if 'INSERT INTO public.marketing_contacts' in sql)
+        self.assertIn("'Sì, checkbox sul sito'",insert)
+        self.assertIn("now()+interval '24 months'",insert)
+        args=next(args for sql,args in statements if 'INSERT INTO public.marketing_contacts' in sql)
+        self.assertIsNone(args[2])  # no booking exists until the staff accepts the request
 
 if __name__=='__main__':unittest.main()
