@@ -101,3 +101,8 @@ _13 ottobre 2026; Drive `ecosistema makai/sito makai`._
 - **Verifiche locali:** suite Python 146/146, JavaScript 9/9, build Vite superata; prova end-to-end dell'API contro PostgreSQL temporaneo: richiesta `pending`, replay idempotente, nessuna prenotazione; `git diff --check` superato.
 - **DA FARE:** pubblicare insieme a Agenda; provare il flusso su Production con manutenzione ancora attiva. Messaggi di esito via email/WhatsApp non implementati in questo intervento.
 - **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** database v2 verificato nel registro precedente; API/UI Sito non verificate live. Nessun commit, push o deploy.
+
+## Push integrazione DOPOCENA v2 — 14 ottobre 2026
+- **DEPLOYATO:** commit `4922faddbd68e086ad1b3d93c89e156243020aa8` inviato a `origin/main`; stato Vercel del commit `success` con descrizione «Deployment has completed».
+- **VERIFICATO IN PRODUZIONE:** `GET https://www.makaipigneto.it/api/site-maintenance` ha risposto HTTP 200 con `{"active":true}` dopo il push. Non è stata inviata alcuna prenotazione live; il nuovo percorso DOPOCENA non è ancora verificato sul dominio.
+- **DA FARE:** controllo coordinato con Agenda e prova controllata CENA/DOPOCENA prima di disattivare stabilmente la manutenzione. `.engram ` preesistente esclusa dal commit.
