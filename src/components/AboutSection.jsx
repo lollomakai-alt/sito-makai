@@ -8,7 +8,17 @@ export default function AboutSection() {
 
   return (
     <section id="chi-siamo" className="about-section content-section" aria-labelledby="about-title">
-      <h2 id="about-title" className="section-title">{copy.title}</h2>
+      <h2 id="about-title" className="section-title about-home-title">{copy.title}</h2>
+      <div className="about-heading-divider" aria-hidden="true">
+        <span />
+        <img
+          src={`${import.meta.env.BASE_URL}images/hero/straw-hat-skull.svg`}
+          alt=""
+          width="54"
+          height="42"
+        />
+        <span />
+      </div>
       <a href="/chi-siamo" className="about-panel-link" aria-label={`${copy.more} — ${copy.title}`}>
         <div className="about-panel panel">
           <p className="section-subtitle">{lead}

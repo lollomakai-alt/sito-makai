@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import HeroStyleHeading from "../components/HeroStyleHeading";
 
 function formatPrice(price, language) {
   return Number(price).toLocaleString(language === "en" ? "en-GB" : "it-IT", {
@@ -71,7 +72,7 @@ export default function MenuDetailPage({ containerRef, page }) {
 
       <main className="menu-detail-main">
         <section className={`menu-detail-section content-section${isDynamicMenu ? " menu-food-detail-section" : ""}`}>
-          <h1 className="menu-detail-title">{page.title}</h1>
+          <HeroStyleHeading as="h1" className="menu-detail-title">{page.title}</HeroStyleHeading>
           
           {/* Pannello principale di presentazione della categoria */}
           <article className="menu-detail-panel">

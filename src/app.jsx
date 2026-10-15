@@ -55,6 +55,7 @@ function AppContent() {
   const [activeSection] = useState("about");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [maintenance, setMaintenance] = useState("loading");
+  const localHomepagePreview = import.meta.env.DEV && window.location.pathname === "/";
 
   useEffect(() => {
     let current = true;
@@ -83,8 +84,8 @@ function AppContent() {
 
   usePageMotion(containerRef, currentPath, maintenance);
 
-  if (maintenance === "loading") return <PageFallback />;
-  if (maintenance === "active" && currentPath !== "/prenotazioni/gestisci" && currentPath !== "/privacy") return <MaintenancePage />;
+  if (!localHomepagePreview && maintenance === "loading") return <PageFallback />;
+  if (!localHomepagePreview && maintenance === "active" && currentPath !== "/prenotazioni/gestisci" && currentPath !== "/privacy") return <MaintenancePage />;
 
   function closeChat() {
     setIsChatOpen(false);

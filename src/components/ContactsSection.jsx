@@ -1,6 +1,7 @@
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
 import { contactInfo } from "../data/contactInfo";
+import HomeSectionHeading from "./HomeSectionHeading";
 
 const mapsUrl = "https://www.google.com/maps/place//data=!4m2!3m1!1s0x132f602bc97659d1:0x91e31e79d05bc2c6?sa=X&ved=1t:8290&ictx=111";
 
@@ -10,7 +11,7 @@ export default function ContactsSection() {
 
   return (
     <section id="contatti" className="contacts-section content-section" aria-labelledby="contacts-title">
-      <h2 id="contacts-title" className="contacts-title">{copy.title}</h2>
+      <HomeSectionHeading id="contacts-title" className="contacts-title">{copy.title}</HomeSectionHeading>
       <div className="contacts-layout">
         <div className="contacts-totem" aria-hidden="true">
           <img

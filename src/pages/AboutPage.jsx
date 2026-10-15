@@ -1,6 +1,7 @@
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import HeroStyleHeading from "../components/HeroStyleHeading";
 
 const aboutPageCopy = {
   it: {
@@ -54,7 +55,7 @@ export default function AboutPage({ containerRef }) {
 
       <main className="about-detail-main">
         <section className="about-detail-section content-section" aria-labelledby="about-detail-title">
-          <h1 id="about-detail-title" className="section-title">{copy.title}</h1>
+          <HeroStyleHeading as="h1" id="about-detail-title" className="section-title">{copy.title}</HeroStyleHeading>
 
           <div className="about-detail-copy panel">
             {copy.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { eventImages } from "virtual:event-images";
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
+import HomeSectionHeading from "./HomeSectionHeading";
 
 export default function EventsSection() {
   const { language } = useLanguage();
@@ -83,7 +84,7 @@ export default function EventsSection() {
 
   return (
     <section ref={sectionRef} id="eventi" className="events-section content-section" aria-labelledby="events-title">
-      <h2 id="events-title" className="events-title">{copy.title}</h2>
+      <HomeSectionHeading id="events-title" className="events-title">{copy.title}</HomeSectionHeading>
       <div className="events-layout">
         <div className="events-copy">
           <p>{copy.text}</p>

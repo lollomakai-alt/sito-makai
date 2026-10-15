@@ -3,6 +3,7 @@ import { galleryImages } from "../data/siteContent";
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import HeroStyleHeading from "../components/HeroStyleHeading";
 
 export default function GalleryPage({ containerRef }) {
   const { language } = useLanguage();
@@ -46,7 +47,7 @@ export default function GalleryPage({ containerRef }) {
 
       <main className="gallery-page-main">
         <section className="gallery-page-section content-section">
-          <h1 className="gallery-page-title">{copy.gallery.title}</h1>
+          <HeroStyleHeading as="h1" className="gallery-page-title">{copy.gallery.title}</HeroStyleHeading>
           <div className="gallery-grid">
             {galleryImages.map((image, index) => (
               <button

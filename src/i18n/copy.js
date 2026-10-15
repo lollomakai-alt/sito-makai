@@ -12,6 +12,7 @@ export const siteCopy = {
     },
     hero: {
       wallLabel: "Parete fotografica del Makai: sala, cocktail, dettagli Tiki e serate nel locale",
+      eyebrow: "Makai Grand Line",
       title: "Benvenuti a bordo del Makai",
       description: "Tiki bar e ristorante a tema One Piece al Pigneto, Roma. Cocktail al rum, piatti della Grand Line e una ciurma pronta ad accogliervi.",
     },
@@ -80,6 +81,7 @@ export const siteCopy = {
     },
     hero: {
       wallLabel: "Makai photo wall: dining room, cocktails, Tiki details and events",
+      eyebrow: "Makai Grand Line",
       title: "Welcome aboard Makai",
       description: "A One Piece-themed Tiki bar and restaurant in Pigneto, Rome. Rum cocktails, Grand Line dishes and a crew ready to welcome you.",
     },

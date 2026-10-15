@@ -1,5 +1,6 @@
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
+import HomeSectionHeading from "./HomeSectionHeading";
 
 export default function HomeMenuSection() {
   const { language } = useLanguage();
@@ -7,7 +8,7 @@ export default function HomeMenuSection() {
 
   return (
     <section id="menu" className="menu-section content-section" aria-labelledby="menu-title">
-      <h2 id="menu-title" className="menu-title">{copy.title}</h2>
+      <HomeSectionHeading id="menu-title" className="menu-title">{copy.title}</HomeSectionHeading>
       <div className="menu-panels">
         <a className="menu-panel" href="/menu-drink">
           <div className="menu-panel-copy">
