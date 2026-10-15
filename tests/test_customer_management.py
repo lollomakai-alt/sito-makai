@@ -16,26 +16,37 @@ class CustomerManagementTests(unittest.TestCase):
     def test_random_links_store_hash_not_raw_capability(self):
         calls=[]
         class Connection:
-            def execute(self,sql,args):calls.append((sql,args))
+            def execute(self,sql,args):calls.append((sql,args));return self
+            def fetchone(self):return {'booking_id':42}
         first=issue_management_link(Connection(),42)
         second=issue_management_link(Connection(),42)
         self.assertNotEqual(first,second)
         token=first.split('=')[1]
         self.assertEqual(len(token),43)
-        self.assertEqual(calls[0][1][0],token_hash(token))
-        self.assertNotIn(token,calls[0][1])
+        self.assertEqual(calls[1][1][0],token_hash(token))
+        self.assertNotIn(token,calls[1][1])
         self.assertNotIn('42',first.split('#')[0])
         for invalid in ['42','../bookings/42','!'*43,None]:
             with self.assertRaises(ValueError):token_hash(invalid)
     def test_public_management_actions_are_server_validated_and_private(self):
         client=TestClient(index.app)
-        for action,body in [('view',{}),('reconfirm',{}),('request',{'request_type':'cancellazione','requested_value':None})]:
+        for action,body in [('view',{}),('reconfirm',{}),('request',{'request_type':'cancellazione','requested_value':None,'operation_id':'00000000-0000-4000-8000-000000000001'})]:
             index._hits.clear()
             with patch('index.customer_action',return_value={'ok':True}) as service:
                 response=client.post('/api/booking-management/'+action,json={'token':'a'*43,**body})
             self.assertEqual(response.status_code,200)
             self.assertEqual(response.headers['cache-control'],'no-store')
             self.assertEqual(service.call_args.args[0],'a'*43)
+        index._hits.clear()
+        with patch('index.customer_action',return_value={'ok':True,'outcome':'pending'}):
+            response=client.post('/api/booking-management/request',json={'token':'a'*43,'request_type':'data','requested_value':'2026-10-20','operation_id':'00000000-0000-4000-8000-000000000002'})
+        self.assertEqual(response.status_code,202)
+        index._hits.clear()
+        with patch('index.customer_action',return_value={'ok':True,'outcome':'cancelled','_booking_id':42,'_communication_id':13}),patch('index.send_customer_action_email') as send:
+            response=client.post('/api/booking-management/request',json={'token':'a'*43,'request_type':'cancellazione','operation_id':'00000000-0000-4000-8000-000000000003'})
+        self.assertEqual(response.status_code,200)
+        self.assertNotIn('_booking_id',response.json())
+        send.assert_called_once_with(42,13)
         with patch('index.customer_action',side_effect=ValueError('secret')):
             index._hits.clear()
             self.assertEqual(client.post('/api/booking-management/view',json={'token':'a'*43}).status_code,404)

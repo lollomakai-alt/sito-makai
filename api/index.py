@@ -8,6 +8,7 @@ from pathlib import Path
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager, suppress
 from typing import List, Literal, Optional, Union
+from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +29,7 @@ from bookings.online import create_online_booking, PRIVACY_VERSION
 from bookings.customer import customer_action
 from bookings.dates import _slots
 from admin_auth import router as auth_router, require_admin, require_browser_action, require_agenda_gateway
-from booking_communications import router as communications_router, send_new_online_booking_email
+from booking_communications import router as communications_router, send_new_online_booking_email, send_customer_action_email
 from booking_push import send_new_online_booking_push
 from maintenance_mode import router as maintenance_router, public_status, MaintenanceActive
 from bookings.maintenance import cleanup_loop
@@ -163,6 +164,7 @@ class CustomerActionBody(BaseModel):
 class CustomerRequestBody(CustomerActionBody):
     request_type: Literal["data","ora","persone","cancellazione","note"]
     requested_value: object = None
+    operation_id: UUID
 
 @app.post("/api/booking-management/{action}")
 def manage_customer_booking(action: Literal["view","reconfirm","request"], body: Union[CustomerRequestBody, CustomerActionBody], request: Request, response: Response):
@@ -171,7 +173,15 @@ def manage_customer_booking(action: Literal["view","reconfirm","request"], body:
     if action == "request" and not isinstance(body,CustomerRequestBody):
         raise HTTPException(status_code=422,detail="Richiesta incompleta.")
     try:
-        return customer_action(body.token, action, getattr(body,"request_type",None), getattr(body,"requested_value",None))
+        result = customer_action(body.token, action, getattr(body,"request_type",None),
+                                 getattr(body,"requested_value",None), getattr(body,"operation_id",None))
+        booking_id = result.pop('_booking_id', None)
+        communication_id = result.pop('_communication_id', None)
+        if booking_id and communication_id:
+            send_customer_action_email(booking_id, communication_id)
+        if result.get('outcome') == 'pending':
+            response.status_code = 202
+        return result
     except ValueError:
         raise HTTPException(status_code=404,detail="Collegamento non valido o scaduto.") from None
     except Exception as error:

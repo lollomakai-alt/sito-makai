@@ -121,3 +121,59 @@ _13 ottobre 2026; Drive `ecosistema makai/sito makai`._
 - **Verifiche locali:** test booking/API/disponibilità 27/27; suite Python completa 146/146; JavaScript 10/10; build Vite superata (53 moduli); `git diff --check` superato.
 - Il DOPOCENA resta in revisione manuale; questo cambiamento non introduce conferme o disdette automatiche, né email o WhatsApp automatici. Nessuna modifica al motore dei tavoli.
 - **DEPLOYATO:** no per il codice modificato. **VERIFICATO IN PRODUZIONE:** solo definizione SQL e nullable dello schema lette in sola lettura; UI/API aggiornate non verificate live. Nessun commit, push o deploy.
+
+## Hero homepage — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** `HeroSection.jsx` usa le otto immagini presenti in `public/images`: `carne-osso.webp`, `MENU56.webp`, `panino.webp`, `menu.webp`, `sushi.webp`, `Udon di oden .webp`, `sushi2.webp` e `drinktop.webp`. Su mobile e sui dispositivi rilevati come meno potenti monta soltanto le prime quattro, in collage statico 2×2; su desktop monta la sequenza completa e il doppio necessario per il loop orizzontale lento. Il testo i18n resta fermo su un pannello scuro; la navigazione esistente non è stata cambiata. `prefers-reduced-motion` disattiva l’animazione CSS.
+- **Evidenze locali (14 ottobre):** test JavaScript 12/12; build Vite riuscita (53 moduli); `git diff --check` superato. Percorsi degli otto file verificati sul disco.
+- **Limiti:** nessuna verifica visuale su browser, telefono o produzione; il rilevamento hardware leggero usa API opzionali del browser con fallback. Le prime quattro immagini nell’elenco sono la scelta mobile. Le due cancellazioni preesistenti `public/images/panino.jpg`, `public/images/sushi2.jpg` e `.engram ` non sono state toccate.
+- **DA FARE:** controllo visuale responsive e, se necessario, scelta definitiva delle quattro foto mobile. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy.
+
+## Anteprima homepage locale durante manutenzione — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** in modalità sviluppo la homepage `/` resta visibile senza pannello anche se l'API locale segnala manutenzione o non risponde. Le pagine prenotazioni continuano a rispettare il blocco; la deroga non è attiva nelle build/ambienti production.
+- **Verifiche precedenti della modalità esplicita:** suite JavaScript 12/12 e build Vite 53 moduli; la modifica da anteprima con query a comportamento automatico locale non è stata verificata con test/build in questo passaggio.
+- **DA FARE:** verificare la homepage in locale. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessuna modifica allo stato di manutenzione remoto o al database.
+
+## Hero homepage secondo riferimento visivo — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** collage 2×2 mobile con le immagini approvate, testo centrato oro/avorio sopra sfumatura scura, marchio, separatore decorativo e CTA localizzata “Info”/“About” verso `#chi-siamo`. Desktop conserva lo scorrimento lento delle otto immagini; reduced-motion resta rispettato. Nessun intervento alla navigazione globale o al backend.
+- **Verifiche locali:** test JavaScript 12/12, build Vite riuscita (53 moduli), `git diff --check` superato.
+- **DA FARE:** controllo visuale nel browser locale alle dimensioni del riferimento e rifinitura di ritagli/spazi se necessari. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy.
+
+## Hero: titolo, teschio e sfondo condiviso — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** rimosso il pulsante Info/About e i relativi testi/stili. Titolo in Cormorant Garamond Semibold, WOFF2 latino locale da 23.4 KB con licenza OFL inclusa; il font rasterizzato nel riferimento non è identificabile con certezza, quindi questo è un adattamento visivo. Il separatore usa la sagoma dorata del teschio ricavata dal riferimento dell'utente, in SVG trasparente da 1.7 KB. Rimossi fondo nero della hero e sfumature del pannello: lo sfondo Tramonto condiviso torna visibile dietro l'intestazione e negli spazi del collage.
+- **Evidenze correnti:** JavaScript 12/12, build Vite 53 moduli e controllo whitespace superati. Chromium locale osservato a 390×844 e 1440×900: font e teschio caricati, CTA assente, quattro foto statiche su mobile, larghezza documento uguale al viewport. Desktop con movimento lento; emulazione reduced-motion con animazione disattivata. Anteprime salvate nel workspace Codex.
+- **Limiti:** browser con API simulate e hardware standard simulato; nessuna richiesta a database/API reali, verifica su iPhone fisico o produzione. **DA FARE:** valutazione finale visiva dell'utente e controllo su dispositivo reale. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy.
+
+## Contrasto leggero hero — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** solo CSS hero: velo nero al 16% sulle fotografie, alone ellittico compatto dietro al testo con bordi trasparenti e ombre delle lettere ridotte a 7–8 px. Sfondo condiviso, font, teschio e composizione conservati.
+- **Evidenze correnti:** build Vite 53 moduli e `git diff --check` superati; controllo Chromium locale a 390×844 e 1440×900 e modalità reduced-motion. Foto statiche mobile, movimento desktop disattivato con reduced-motion, nessun debordo orizzontale. Screenshot mobile aggiornato e ispezionato; API simulate, nessuna connessione al database reale.
+- **DA FARE:** valutazione visiva dell'utente e controllo su dispositivo fisico. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy.
+
+## Sfumatura centrale hero secondo riferimento — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** sostituito il lieve alone precedente con una sfumatura centrale più scura, da nero al 92% a trasparenza, estesa dietro il blocco testo; ellisse esplicita per dissolvere i bordi senza tagli rettangolari. Velo verticale sulle foto più intenso al centro e più leggero alle estremità. Ombre delle lettere alleggerite. Perimetro: CSS hero; foto, font e teschio conservati, pulsante Info ancora rimosso.
+- **Evidenze correnti:** build Vite 53 moduli e controllo whitespace superati. Browser Chromium locale: 390×844, 390×693 (proporzioni del riferimento), 1440×900 e reduced-motion. Screenshot mobile confrontati/ispezionati; caricamento font/teschio, quattro foto mobile, assenza di CTA e debordo verificati. API simulate.
+- **DA FARE:** valutazione visiva dell'utente; non è certificata un'identità pixel per pixel con il raster di riferimento, che usa immagini diverse. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push, deploy o intervento a database/API reali.
+
+## Intestazione Chi siamo — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** solo intestazione della sezione homepage: titolo Pirata One oro chiaro con ombra scura, separatore dorato con teschio già usato nella hero e piccoli rombi. Selettori CSS specifici della homepage; nessuna modifica alla pagina di dettaglio o agli altri titoli.
+- **Evidenze correnti:** build Vite 53 moduli e controllo whitespace superati. Chromium locale a 390×844 e 1440×900: teschio caricato e nessun debordo. Confronto prima/dopo del corpo della sezione superato: testo, collegamento, immagini/dimensioni e stili del pannello/foto uguali. Anteprima mobile ispezionata; API simulate.
+- **DA FARE:** controllo dell'utente e su dispositivo reale. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy.
+
+## Intestazioni Menu, Eventi e Contatti — 14 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** esteso ai soli tre titoli principali della homepage il trattamento approvato per Chi siamo: Pirata One oro chiaro, ombra scura e separatore con teschio/rombi. Componente `HomeSectionHeading` condiviso e stesse regole CSS del titolo Chi siamo; testo localizzato e ID accessibili conservati. Il corpo delle tre sezioni e le pagine di dettaglio non sono stati modificati.
+- **Evidenze correnti:** build Vite 54 moduli e controllo whitespace superati. Chromium locale, API simulate, 390×844 e 1440×1000, italiano/inglese: 12 confronti del corpo prima/dopo superati (HTML, testi, link, foto, controlli e stili/dimensioni invariati). Teschio caricato, titoli oro e nessun debordo. Tre anteprime mobile ispezionate.
+- **DA FARE:** valutazione finale dell'utente e controllo su dispositivo fisico. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy. La modifica preesistente ad `AGENTS.md` è stata letta e preservata.
+
+## Gestione cliente e ripristino schema prenotazioni — 15 ottobre 2026
+- **Perimetro:** audit del backend nel repository Sito, aggiornamento locale di API, pagina `/prenotazioni/gestisci`, informativa privacy e test. Le modifiche preesistenti al Sito sono state preservate.
+- **IMPLEMENTATO LOCALMENTE:** la richiesta cliente usa un identificativo per l'idempotenza; modifica CENA disponibile e cancellazione hanno esito immediato, indisponibilità e DOPOCENA restano richieste pendenti. L'API genera il link nello stesso commit della prenotazione, evita di ruotarlo al replay e tenta l'email di modifica/cancellazione solo dopo il commit. Pagina unica aggiornata per gli esiti reali; nessun account cliente.
+- **Verifiche locali:** suite Python 146/146, JavaScript 12/12 e build Vite riuscite; migrazione SQL provata due volte su copia dello schema Production in PostgreSQL isolato, con test dei flussi cliente e rollback. Prova API integrata sulla stessa istanza locale: prenotazione CENA, ricevuta e token nello stesso commit, replay senza rotazione del link, modifica/cancellazione e rollback se il token non può essere creato. Nessuna prova browser/dispositivo.
+- **DEPLOYATO:** il codice Sito di questo intervento non è stato pubblicato. Lo schema Supabase `20261015012424` è applicato; il Sito Production resta in manutenzione.
+- **VERIFICATO IN PRODUZIONE:** dopo la migrazione, 213 prenotazioni e 86 ricevute online risultano conservate, RLS attiva, tabella token e funzioni cliente presenti, manutenzione attiva. Nessuna prenotazione CENA di prova o email reale inviata.
+- **DA FARE:** pubblicazione coordinata del Sito e verifica controllata CENA, link, modifica, cancellazione e invio email prima della riapertura. Il codice backend eseguito in Production non è stato confrontato direttamente con l'artefatto Vercel.
+
+## Preparazione rilascio gestione cliente — 15 ottobre 2026
+- **Perimetro:** verifica finale nel checkout Mac effettivo, confronto con `origin/main` (`53b395e9`), migrazione Supabase già applicata e selezione dei soli file prenotazioni/API/privacy/test. Le modifiche grafiche della homepage e gli altri file preesistenti restano esclusi dal pacchetto di rilascio. Il backend distribuito è `api/` in questo repository, non la copia separata `backend-makai`.
+- **IMPLEMENTATO LOCALMENTE:** pacchetto Sito/backend preparato nell'indice Git senza commit. Sul checkout e su una copia esatta di `HEAD` con i soli file candidati: Python 146/146, JavaScript 12/12, build Vite riuscite; diff staged senza errori whitespace.
+- **VERIFICATO IN PRODUZIONE:** migrazione `20261015012424` nel registro, 213 prenotazioni, 86 ricevute, 0 token/operazioni cliente, RLS attiva, manutenzione `active=true`; `GET /api/health` e pagina gestione rispondono HTTP 200. Il flusso cliente aggiornato non è stato collaudato live.
+- **DEPLOYATO:** nessun nuovo codice Sito/backend. Il tentativo di commit è stato respinto dalla revisione automatica: l'ordine di pubblicazione non è stato ritenuto autorizzazione esplicita separata a commit/push/deploy. Nessun push/deploy eseguito.
+- **DA FARE:** autorizzazione separata esplicita per commit, push e deploy; poi collaudo coordinato con Agenda/email, senza riapplicare SQL e mantenendo la manutenzione attiva fino ai controlli fondamentali.

@@ -59,7 +59,7 @@ const privacyCopy = {
       },
       {
         title: "Comunicazioni di servizio",
-        text: "Possiamo inviarti comunicazioni strettamente collegate alla prenotazione, come conferme, aggiornamenti, promemoria o comunicazioni operative. Le email di conferma possono essere inviate automaticamente. Il collegamento personale permette di riconfermare o inviare richieste di modifica e cancellazione: queste ultime richiedono l’approvazione dello staff. Il link scade 30 giorni dopo la prenotazione e non va condiviso. Queste comunicazioni non costituiscono marketing e sono funzionali alla gestione della prenotazione.",
+        text: "Possiamo inviarti comunicazioni strettamente collegate alla prenotazione, come conferme, aggiornamenti, promemoria o comunicazioni operative. Le email di conferma possono essere inviate automaticamente. Il collegamento personale permette di riconfermare, modificare o cancellare la prenotazione. Le modifiche disponibili e le cancellazioni sono immediate; quando una modifica non è disponibile, la prenotazione resta invariata e lo staff riceve una richiesta. Il link scade 30 giorni dopo la prenotazione e non va condiviso. Queste comunicazioni non costituiscono marketing e sono funzionali alla gestione della prenotazione.",
       },
       {
         title: "Gestione operativa e storico delle prenotazioni",
@@ -183,7 +183,7 @@ const privacyCopy = {
       },
       {
         title: "Service communications",
-        text: "We may send communications strictly related to your booking, such as confirmations, updates, reminders or operational messages. Booking confirmation emails may be sent automatically. The personal link lets you reconfirm or request changes or cancellation; requests require staff approval. The link expires 30 days after the booking and should not be shared. These communications are not marketing and are required for booking management.",
+        text: "We may send communications strictly related to your booking, such as confirmations, updates, reminders or operational messages. Booking confirmation emails may be sent automatically. The personal link lets you reconfirm, change or cancel your booking. Available changes and cancellations take effect immediately; when a change is unavailable, the booking stays unchanged and staff receive a request. The link expires 30 days after the booking and should not be shared. These communications are not marketing and are required for booking management.",
       },
       {
         title: "Operational management and booking history",

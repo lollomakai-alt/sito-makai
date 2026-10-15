@@ -108,7 +108,8 @@ def create_online_booking(name, phone, date, time, party_size, request_id,
         if previous:
             if previous['fingerprint'] != fingerprint and not (booking_type=='normale' and previous['fingerprint']==legacy_fingerprint):
                 return {"ok": False, "error": "Richiesta già utilizzata con altri dati. Ricarica la pagina."}
-            return {"ok": True, "booking_id": previous['id'], "status": previous['status'], "replayed": True, "booking_type": booking_type, "management_url": issue_management_link(c,previous['id'])}
+            # A retry must not revoke a link already displayed or sent to the customer.
+            return {"ok": True, "booking_id": previous['id'], "status": previous['status'], "replayed": True, "booking_type": booking_type}
         dt, error = _validate(date, time, party_size, booking_type)
         if error:
             return {"ok": False, "error": error}

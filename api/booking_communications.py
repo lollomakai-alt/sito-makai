@@ -150,6 +150,25 @@ def send_new_online_booking_email(booking_id):
         logger.warning('Conferma email automatica non confermata; consultare il log Agenda.')
 
 
+def send_customer_action_email(booking_id, communication_id):
+    """Claim one queued customer update or cancellation after the database commit."""
+    try:
+        server = SupabaseServer()
+        claimed = server.request('POST', '/rest/v1/rpc/claim_booking_email',
+                                 {'p_id': communication_id})
+        if claimed is None:
+            return
+        if (not isinstance(claimed, dict) or claimed.get('id') != communication_id
+                or claimed.get('booking_id') != booking_id
+                or claimed.get('kind') not in ('updated', 'cancelled')):
+            raise HTTPException(status_code=502, detail='Comunicazione cliente non confermata.')
+        response = send_claimed_email(server, claimed, booking_id, communication_id)
+        if response.status_code != 200:
+            logger.warning('Email modifica o cancellazione non accettata; consultare il log Agenda.')
+    except Exception:
+        logger.warning('Email modifica o cancellazione non confermata; consultare il log Agenda.')
+
+
 class TemplateBody(BaseModel):
     model_config = ConfigDict(extra='forbid')
     kind: Literal['reminder','reconfirmation','delay','alternative','cancelled']
