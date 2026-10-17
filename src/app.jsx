@@ -54,10 +54,12 @@ function AppContent() {
   const { language } = useLanguage();
   const [activeSection] = useState("about");
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [maintenance, setMaintenance] = useState("loading");
-  const localHomepagePreview = import.meta.env.DEV && window.location.pathname === "/";
+  const isLocalDevelopment = import.meta.env.DEV;
+  const [maintenance, setMaintenance] = useState(isLocalDevelopment ? "inactive" : "loading");
 
   useEffect(() => {
+    if (isLocalDevelopment) return undefined;
+
     let current = true;
     async function refreshMaintenance() {
       try {
@@ -74,7 +76,7 @@ function AppContent() {
     const timer = window.setInterval(refreshMaintenance, 30000);
     document.addEventListener("visibilitychange", refreshMaintenance);
     return () => { current = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", refreshMaintenance); };
-  }, []);
+  }, [isLocalDevelopment]);
 
   const currentPath = window.location.pathname.replace(/\/$/, "") || "/";
   const menuPage = getMenuPage(currentPath, language);
@@ -84,8 +86,8 @@ function AppContent() {
 
   usePageMotion(containerRef, currentPath, maintenance);
 
-  if (!localHomepagePreview && maintenance === "loading") return <PageFallback />;
-  if (!localHomepagePreview && maintenance === "active" && currentPath !== "/prenotazioni/gestisci" && currentPath !== "/privacy") return <MaintenancePage />;
+  if (!isLocalDevelopment && maintenance === "loading") return <PageFallback />;
+  if (!isLocalDevelopment && maintenance === "active" && currentPath !== "/prenotazioni/gestisci" && currentPath !== "/privacy") return <MaintenancePage />;
 
   function closeChat() {
     setIsChatOpen(false);

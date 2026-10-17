@@ -17,7 +17,7 @@
 }
 .maintenance-logo { display: block; width: min(100%, 260px); height: auto; margin: 0 auto 24px; }
 .maintenance-eyebrow { margin: 0 0 12px; color: #e8bd62; font-size: .82rem; letter-spacing: .18em; text-transform: uppercase; }
-.maintenance-card h1 { margin: 0; color: #ffd681; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(2rem, 8vw, 3.6rem); line-height: 1.08; }
+.maintenance-card > .site-heading { margin-bottom: 0; }
 .maintenance-message { margin: 24px auto; max-width: 49ch; font-size: clamp(1rem, 3.7vw, 1.18rem); line-height: 1.65; }
 .maintenance-contact { display: grid; gap: 10px; justify-items: stretch; margin: 28px auto 0; max-width: 350px; }
 .maintenance-contact a { display: grid; place-items: center; min-height: 48px; padding: 10px 16px; border: 1px solid #e8bd62; border-radius: 12px; color: #fff2cf; text-decoration: none; font-weight: 700; overflow-wrap: anywhere; }

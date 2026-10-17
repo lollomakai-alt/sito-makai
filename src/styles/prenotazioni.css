@@ -4,7 +4,7 @@
 .booking-back { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; margin-bottom: 28px; padding: 12px 22px; color: #f4d985; font-size: .95rem; font-weight: 700; text-decoration: none; background: #08121bf2; border: 1px solid #d5b257; border-radius: 12px; box-shadow: 0 4px 18px #0006, 0 0 12px #d5b25725; transition: background-color .2s ease, color .2s ease, box-shadow .2s ease; }
 .booking-back:hover, .booking-back:focus-visible { color: #101b24; background: #e3c773; box-shadow: 0 0 24px #d5b25799, 0 6px 20px #0005; }
 @media (prefers-reduced-motion: reduce) { .booking-back { transition: none; } }
-.booking-intro .section-title { margin-bottom: 18px; }
+.booking-intro .site-heading { margin-bottom: 18px; }
 .booking-intro > p:last-child { line-height: 1.65; }
 .booking-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: start; gap: 24px; }
 .booking-card { padding: clamp(18px, 3vw, 32px); background: #08121bef; border: 1px solid #a98b4577; border-radius: 20px; box-shadow: 0 16px 40px #0005; }
@@ -93,13 +93,12 @@
 
 .booking-card { min-width: 0; }
 .booking-layout--single > fieldset > .booking-card:first-child { grid-column: 1 / -1; width: min(100%, 760px); justify-self: center; }
-.booking-intro .section-title { text-wrap: balance; }
 .booking-day { min-width: 0; aspect-ratio: 1; align-content: center; }
 
 @media (max-width: 600px) {
 	.booking-main { padding: calc(var(--site-nav-offset, 100px) + 22px) 14px 40px; }
 	.booking-intro { margin-bottom: 20px; }
-	.booking-intro .section-title { margin-bottom: 14px; font-size: 2.5rem; letter-spacing: 1px; }
+	.booking-intro .site-heading { margin-bottom: 14px; }
 	.booking-subtitle-panel { padding: 16px; font-size: .95rem; line-height: 1.55; }
 	.booking-back { min-height: 44px; margin-bottom: 20px; padding: 10px 16px; }
 	.booking-card { padding: 18px 14px; border-radius: 14px; }
@@ -123,3 +122,21 @@
 	.booking-day { min-height: 36px; }
 	.booking-month h3 { font-size: .95rem; }
 }
+
+/* Keep customer booking-management controls inside the card on iOS Safari. */
+.customer-manage-form,
+.customer-manage-form form,
+.customer-manage-form .booking-field { min-width: 0; }
+.customer-manage-form form { display: grid; gap: 14px; }
+.customer-manage-form .booking-field input,
+.customer-manage-form .booking-field select,
+.customer-manage-form .booking-field textarea {
+	box-sizing: border-box;
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	font-size: 16px;
+}
+.customer-manage-form > p,
+.customer-manage-form li { overflow-wrap: anywhere; }

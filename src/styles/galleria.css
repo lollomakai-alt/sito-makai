@@ -44,19 +44,7 @@
   text-align: center;
 }
 
-.gallery-page-title {
-  margin: 0 0 clamp(28px, 5vw, 56px);
-  font-family: 'Pirata One', Georgia, serif;
-  font-size: clamp(2.5rem, 6vw, 4.4rem);
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: clamp(2px, 0.5vw, 6px);
-  text-transform: uppercase;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
-}
+.gallery-page-section > .site-heading { margin-bottom: clamp(28px, 5vw, 56px); }
 
 .gallery-grid {
   display: grid;

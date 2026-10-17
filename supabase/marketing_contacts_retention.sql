@@ -18,7 +18,7 @@ alter table public.marketing_contacts
   alter column email drop not null;
 
 update public.marketing_contacts
-set scadenza_consenso = consenso_data + interval '24 months'
+set scadenza_consenso = consenso_data + interval '12 months'
 where scadenza_consenso is null;
 
 alter table public.marketing_contacts

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { receiptMessage, formError, explainInvalidInput, clearInputExplanation } from "../i18n/bookingFeedback";
 import SiteNav from "../components/SiteNav";
+import SiteHeading from "../components/SiteHeading";
 import { useLanguage } from "../i18n/LanguageContext";
 import "../styles/prenotazioni.css";
 
@@ -104,7 +106,7 @@ export default function BookingPage({ containerRef }) {
       setReceipt(data); setReviewed(true);
     } catch (error) {
       setSaveError(error.name === 'AbortError' || error instanceof TypeError
-        ? t('Risposta non ricevuta. Riprova con gli stessi dati: la richiesta non verrà duplicata.', 'No response received. Retry with the same details: your request will not be duplicated.') : error.message);
+        ? t('Risposta non ricevuta. Riprova con gli stessi dati: la richiesta non verrà duplicata.', 'No response received. Retry with the same details: your request will not be duplicated.') : error instanceof SyntaxError ? t('Risposta non leggibile. Riprova con gli stessi dati per verificare l’esito.', 'Unreadable response. Retry with the same details to check the outcome.') : error.message);
     } finally { window.clearTimeout(timer); submitting.current = false; setSaving(false); }
   }
   const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available"), manual_review: t("Richiesta da confermare", "Request needs confirmation") };
@@ -115,10 +117,10 @@ export default function BookingPage({ containerRef }) {
       <main className="booking-main">
         <header className="booking-intro">
           <a className="booking-back" href="/#contatti">{t("← Torna ai contatti", "← Back to contacts")}</a>
-          <h1 className="section-title">{t("Un posto per te", "A place for you")}</h1>
-          <p className="booking-subtitle-panel">{t("La tua prossima serata al Makai inizia qui. Scegli le persone e il giorno, poi lasciaci i tuoi contatti.", "Your next evening at Makai starts here. Choose your party size and date, then leave your contact details.")}</p>
+          <SiteHeading as="h1" className="section-title">{t("Un posto per te", "A place for you")}</SiteHeading>
+          <p className="booking-subtitle-panel">{t("La tua prossima avventura a bordo del Makai inizia qui. Scegli le persone e il giorno, poi lasciaci i tuoi contatti.", "Your next adventure aboard Makai starts here. Choose your party size and date, then leave your contact details.")}</p>
         </header>
-        <form className={`booking-layout${selected && currentAvailability && !loading ? "" : " booking-layout--single"}`} onChange={() => setReviewed(false)} onSubmit={submitBooking}>
+        <form className={`booking-layout${selected && currentAvailability && !loading ? "" : " booking-layout--single"}`} onChange={() => setReviewed(false)} onInvalid={event => explainInvalidInput(event, language)} onInput={clearInputExplanation} onSubmit={submitBooking}>
           <fieldset disabled={saving || Boolean(receipt)} style={{ display: "contents" }}>
           <div className="booking-card">
             <section aria-labelledby="booking-guests-title">
@@ -146,7 +148,7 @@ export default function BookingPage({ containerRef }) {
                     <span className="booking-choice-face booking-time-face"><strong>{time}</strong>{time === '00:00' && <small>{t('Giorno dopo', 'Next day')}</small>}</span>
                   </label>)}
                 </div>
-                {!settings && !settingsError && <p className="booking-help" role="status">{t("Caricamento orari…", "Loading times…")}</p>}
+                {!settings && !settingsError && <p className="booking-help" role="status">{t("Consulto gli orari nel registro di bordo…", "Checking times in the ship’s log…")}</p>}
               </fieldset>
               <p id="booking-time-help" className="booking-help">{t("Cucina fino alle 23:30. Il giorno selezionato è la giornata di servizio; 00:00 indica la mezzanotte successiva.","Kitchen closes at 23:30. The selected date is the service day; 00:00 means the following midnight.")}</p>
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
@@ -159,16 +161,16 @@ export default function BookingPage({ containerRef }) {
                 {t("Conferma persone e mostra disponibilità", "Confirm guests and show availability")}
               </button>}
               {largeGroup && <div className="booking-group-notice" role="status">
-                <h3>{t("Siete un bel gruppo!", "Planning for a group?")}</h3>
+                <h3>{t("Siete una bella ciurma!", "Bringing a whole crew?")}</h3>
                 <p>{t(`Per più di ${settings.max_party_size} persone è meglio chiamarci: troviamo insieme la soluzione più adatta alla vostra serata.`, `For more than ${settings.max_party_size} guests, please call us so we can plan your evening together.`)}</p>
                 {phoneHref && <a className="booking-back" href={phoneHref}>{t("Chiamaci", "Call us")} · {settings.phone}</a>}
               </div>}
-              {settingsError && <p className="booking-help" role="status">{t("Servizio momentaneamente non disponibile. Riprova più tardi o visita la sezione Contatti.", "Service temporarily unavailable. Try later or visit Contacts.")}</p>}
+              {settingsError && <p className="booking-help" role="status">{t("Una sosta imprevista in porto: servizio momentaneamente non disponibile. Riprova più tardi o visita la sezione Contatti.", "An unexpected stop in port: service temporarily unavailable. Try later or visit Contacts.")}</p>}
             </section>
             {calendarVisible && <section ref={calendarRef} tabIndex={-1} className="booking-calendar" aria-labelledby="booking-date-title" aria-busy={loading}>
               <h2 id="booking-date-title"><span>02</span> {t("Scegli il giorno", "Choose a date")}</h2>
-              <p className="booking-help" role="status">{loading ? t("Controllo le date disponibili…", "Checking available dates…") : t(`${bookingType === "dopocena" ? "DOPOCENA" : "CENA"}: disponibilità per ${confirmedGuests} persone alle ${bookingTime}.`, `Availability for ${confirmedGuests} guests at ${bookingTime}.`)}</p>
-              {availabilityError && <div role="alert" className="booking-help">{t("Non riesco a verificare l’agenda. Nessuna data è confermata disponibile.", "Unable to check availability. No date is confirmed available.")} <button type="button" onClick={showAvailability}>{t("Riprova", "Retry")}</button></div>}
+              <p className="booking-help" role="status">{loading ? t("Consulto il registro di bordo…", "Checking the ship’s log…") : t(`${bookingType === "dopocena" ? "DOPOCENA" : "CENA"}: disponibilità per ${confirmedGuests} persone alle ${bookingTime}.`, `Availability for ${confirmedGuests} guests at ${bookingTime}.`)}</p>
+              {availabilityError && <div role="alert" className="booking-help">{t("La ciurma non riesce a verificare le date. Nessuna data è confermata disponibile.", "The crew cannot check availability. No date is confirmed available.")} <button type="button" onClick={showAvailability}>{t("Riprova", "Retry")}</button></div>}
               <div className="booking-month">
                 <button type="button" disabled={monthOffset === 0} onClick={() => setMonthOffset(monthOffset - 1)} aria-label={t("Mese precedente", "Previous month")}>←</button>
                 <h3 aria-live="polite">{month.toLocaleDateString(locale, { month: "long", year: "numeric" })}</h3>
@@ -186,7 +188,7 @@ export default function BookingPage({ containerRef }) {
                 })}
               </div>
               <div className="booking-legend"><span>🟢 {t("Disponibile", "Available")}</span>{bookingType === "dopocena" && <span>🟡 {t("Richiesta da confermare", "Request needs confirmation")}</span>}<span>🔴 {t("Non disponibile per il gruppo", "Unavailable for your group")}</span><span>— {t("Chiuso / non prenotabile", "Closed / unavailable")}</span></div>
-              {currentAvailability && !Object.values(currentAvailability.days).some(state => state === "available" || bookingType === "dopocena" && state === "manual_review") && <p className="booking-help">{t("Nessuna data disponibile in questo mese per il vostro gruppo. Controlla il mese successivo o chiamaci.", "No dates available this month for your group. Check the next month or call us.")}</p>}
+              {currentAvailability && !Object.values(currentAvailability.days).some(state => state === "available" || bookingType === "dopocena" && state === "manual_review") && <p className="booking-help">{t("Nessun approdo disponibile in questo mese per la vostra ciurma. Controlla il mese successivo o chiamaci.", "No dates available this month for your crew. Check the next month or call us.")}</p>}
               <p className="booking-date-feedback" aria-live="polite">{selected ? formatDate(selected) : ""}</p>
             </section>}
           </div>
@@ -206,22 +208,14 @@ export default function BookingPage({ containerRef }) {
               <label className="booking-check"><input type="checkbox" name="marketing" /><span>{t("Voglio ricevere sconti, offerte e novità di Makai tramite WhatsApp.", "I would like to receive Makai discounts, offers and news via WhatsApp.")}</span></label>
               <p className="booking-help">{t("Facoltativo. Puoi prenotare anche senza aderire.", "Optional. You can book without opting in.")}</p>
             </section>
-            {bookingType === "dopocena" && <p className="booking-help">{t("Il DOPOCENA è una richiesta in attesa: non è ancora una prenotazione confermata. Lo staff ti risponderà dopo aver verificato la disponibilità.", "DOPOCENA is a request awaiting review, not a confirmed booking. Staff will reply after checking availability.")}</p>}
+            {bookingType === "dopocena" && <p className="booking-help">{t("Per il DOPOCENA invii una richiesta alla ciurma: la prenotazione richiede la conferma dello staff dopo la verifica della disponibilità.", "For DOPOCENA you send a request to the crew: your booking requires staff confirmation after an availability check.")}</p>}
             <div className="booking-summary">
               <h2>{t("Il tuo riepilogo", "Your summary")}</h2>
               <p>{guests || "—"} {t("persone", "guests")} · {selected ? formatDate(selected) : t("Data da scegliere", "Choose a date")} · {bookingTime || "—"}</p>
-              <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Salvataggio…", "Saving…") : receipt ? t("Richiesta registrata", "Request recorded") : bookingType === "dopocena" ? t("Invia richiesta DOPOCENA", "Send DOPOCENA request") : t("Conferma prenotazione", "Confirm booking")}</button>
-              {saveError && <p role="alert" className="booking-result">{saveError}</p>}
-              {receipt?.management_url && <p className="booking-result"><a href={receipt.management_url}>Gestisci o riconferma la prenotazione</a></p>}
-              {reviewed && receipt && <p className="booking-result" role="status">{receipt.status === 'confirmed'
-                ? t(`Prenotazione confermata per ${guests} persone alle ${bookingTime}. Il tavolo è assegnato automaticamente.`, `Booking confirmed for ${guests} guests at ${bookingTime}. Your table has been assigned.`)
-                : receipt.status === 'pending'
-                  ? t(`Richiesta DOPOCENA ricevuta per ${guests} persone alle ${bookingTime}. Non è ancora confermata: lo staff ti risponderà dopo aver verificato la disponibilità.`, `DOPOCENA request received for ${guests} guests at ${bookingTime}. It is not confirmed yet; staff will reply after checking availability.`)
-                  : receipt.status === 'accepted'
-                    ? t("La richiesta DOPOCENA risulta accettata dallo staff. Riceverai la risposta del locale.", "Staff accepted your DOPOCENA request. You will receive the venue's reply.")
-                    : receipt.status === 'rejected'
-                      ? t("La richiesta DOPOCENA non è stata accettata. Il locale ti risponderà sul recapito indicato.", "Your DOPOCENA request was not accepted. The venue will reply using the contact details provided.")
-                      : t(`Richiesta già registrata, stato: ${receipt.status}. Contatta il locale per informazioni.`, `Request already recorded, status: ${receipt.status}. Contact the venue for information.`)}</p>}
+              <button className="booking-submit" type="submit" disabled={!settings || !selected || !bookingTime || saving || Boolean(receipt)}>{saving ? t("Invio al registro di bordo…", "Sending to the ship’s log…") : receipt ? (receipt.status === "confirmed" ? t("Prenotazione confermata", "Booking confirmed") : t("Esito ricevuto", "Outcome received")) : bookingType === "dopocena" ? t("Invia richiesta DOPOCENA", "Send DOPOCENA request") : t("Conferma prenotazione", "Confirm booking")}</button>
+              {saveError && <p role="alert" className="booking-result">{formError(saveError, language)}</p>}
+              {receipt?.management_url && <p className="booking-result"><a href={receipt.management_url}>{t("Gestisci o riconferma la prenotazione", "Manage or reconfirm your booking")}</a></p>}
+              {reviewed && receipt && <p className="booking-result" role="status">{receiptMessage(receipt, { guests, time: bookingTime, date: selected ? formatDate(selected) : "", language })}</p>}
 
             </div>
           </div>}

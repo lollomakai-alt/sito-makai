@@ -1,4 +1,5 @@
 import SiteNav from "../components/SiteNav";
+import SiteHeading from "../components/SiteHeading";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const ragioneSociale = "AMACA S.r.l.";
@@ -9,7 +10,7 @@ const emailPrivacy = "makairoma@gmail.com";
 const privacyCopy = {
   it: {
     title: "Informativa sulla privacy",
-    updated: "Ultimo aggiornamento: 6 ottobre 2026",
+    updated: "Ultimo aggiornamento: 17 ottobre 2026",
 
     sections: {
       controller: "1. Titolare del trattamento",
@@ -27,7 +28,7 @@ const privacyCopy = {
     },
 
     controller:
-      "Il Titolare del trattamento gestisce il locale Makai Grand Line. Per qualsiasi richiesta relativa alla protezione dei dati personali puoi utilizzare l'indirizzo email indicato sopra.",
+      "Il Titolare del trattamento gestisce il locale Makai Grand Line. Il Responsabile della protezione dei dati (DPO/RPD) nominato è Alessio Esposito, contattabile all'indirizzo email indicato sopra.",
 
     dataIntro:
       "Quando utilizzi il sito, effettui una prenotazione online, telefoni al locale o comunichi con il personale per una prenotazione, possiamo trattare i seguenti dati:",
@@ -43,6 +44,11 @@ const privacyCopy = {
       "stato della prenotazione, comprese modifiche, cancellazioni e mancata presentazione;",
       "informazioni relative alle comunicazioni di servizio collegate alla prenotazione;",
       "richieste di modifica o cancellazione, decisioni dello staff e riconferme ricevute tramite il collegamento personale;",
+      "testi inviati alla chat Nostromo e dati inseriti durante la conversazione; il contesto temporaneo della chat è trasmesso in un token firmato e scade dopo 30 minuti;",
+      "dati delle richieste di inserimento in lista d'attesa, inclusi nome, telefono, email se fornita, data, orario, numero di persone, note, stato e storico delle modifiche;",
+      "dati delle comunicazioni di servizio, come destinatario, canale, contenuto predisposto, stato di invio, identificativi del fornitore ed eventuali errori;",
+      "indirizzo IP e dati tecnici usati temporaneamente per limitare gli abusi e proteggere il servizio;",
+      "preferenza della lingua del sito, conservata nel browser tramite memoria locale;",
       "dati tecnici strettamente necessari al funzionamento e alla sicurezza del servizio.",
     ],
 
@@ -55,7 +61,7 @@ const privacyCopy = {
     purposes: [
       {
         title: "Gestione della prenotazione",
-        text: "Utilizziamo i dati per registrare e gestire la prenotazione, verificare la disponibilità, assegnare il tavolo, gestire eventuali modifiche o cancellazioni e contattarti quando necessario. Base giuridica: esecuzione di misure precontrattuali o del servizio richiesto, ai sensi dell'art. 6, par. 1, lett. b) GDPR.",
+        text: "Utilizziamo i dati per registrare e gestire la prenotazione, verificare la disponibilità, assegnare il tavolo, gestire eventuali modifiche o cancellazioni e contattarti quando necessario. La chat Nostromo può essere usata per rispondere alle richieste e avviare una prenotazione; il relativo contesto è temporaneo. Base giuridica per la gestione della prenotazione: esecuzione di misure precontrattuali o del servizio richiesto, ai sensi dell'art. 6, par. 1, lett. b) GDPR.",
       },
       {
         title: "Comunicazioni di servizio",
@@ -63,7 +69,7 @@ const privacyCopy = {
       },
       {
         title: "Gestione operativa e storico delle prenotazioni",
-        text: "Le informazioni relative a prenotazioni, modifiche, cancellazioni, arrivi, mancata presentazione e comunicazioni rilevanti possono essere utilizzate dal personale autorizzato per gestire il servizio e ricostruire gli eventi operativi collegati alla prenotazione.",
+        text: "Le informazioni relative a prenotazioni, richieste in lista d'attesa, modifiche, cancellazioni, arrivi, mancata presentazione e comunicazioni rilevanti possono essere utilizzate dal personale autorizzato per gestire il servizio e ricostruire gli eventi operativi collegati. Le comunicazioni possono essere registrate con il relativo stato tecnico di invio.",
       },
       {
         title: "Marketing e promozioni",
@@ -75,11 +81,10 @@ const privacyCopy = {
       "Il conferimento dei dati necessari alla prenotazione è indispensabile per poterla gestire e confermare. Il consenso per finalità di marketing è invece facoltativo, separato dalla prenotazione e non è mai necessario per utilizzare i servizi del Makai.",
 
     retention: [
-      "I dati della prenotazione vengono conservati per il periodo necessario alla gestione del servizio e secondo le scadenze configurate nei sistemi Makai.",
-      "In assenza del consenso a essere ricordato per prenotazioni future, il sistema prevede una scadenza ordinaria dei dati personali della prenotazione dopo 30 giorni.",
-      "Quando è presente il consenso a essere ricordato per prenotazioni future, il sistema prevede una conservazione fino a 12 mesi.",
-      "I dati relativi al consenso marketing e alle attività promozionali possono essere conservati fino a 24 mesi dal consenso, salvo revoca precedente.",
-      "Alcune informazioni possono essere conservate più a lungo quando ciò sia necessario per adempiere a obblighi di legge, tutelare un diritto o documentare eventi rilevanti, nel rispetto dei principi di necessità e minimizzazione.",
+      "Le prenotazioni e i relativi dati operativi — incluse richieste DOPOCENA, richieste cliente, voci e storico della lista d'attesa, storico prenotazione, token, ricevute tecniche e log delle comunicazioni — sono cancellati automaticamente 30 giorni dopo la data del servizio o della richiesta.",
+      "Il contesto temporaneo della chat Nostromo scade dopo 30 minuti. I messaggi non vengono salvati come cronologia chat nel database; se la conversazione porta a una prenotazione, i dati necessari vengono registrati nella prenotazione.",
+      "I dati relativi al consenso marketing e alle attività promozionali sono conservati fino a 12 mesi dalla registrazione o dal rinnovo del consenso. La revoca interrompe subito l'uso promozionale; la prova del consenso resta conservata al massimo per 12 mesi dalla registrazione o dal rinnovo.",
+      "Alcune informazioni possono essere conservate più a lungo quando ciò sia necessario per adempiere a obblighi di legge o tutelare un diritto, nel rispetto dei principi di necessità e minimizzazione.",
     ],
 
     providersIntro:
@@ -87,8 +92,9 @@ const privacyCopy = {
 
     providers: [
       "Supabase, per database, autenticazione e servizi backend;",
-      "Vercel, per hosting e distribuzione del sito web;",
+      "Vercel, per hosting e distribuzione del sito e dei servizi backend;",
       "Resend, per l'invio delle email relative alle prenotazioni.",
+      "WhatsApp/Meta, quando scegli di contattare il locale tramite WhatsApp o, se hai prestato il consenso, di ricevere comunicazioni promozionali tramite quel canale.",
     ],
 
     providersOutro:
@@ -120,7 +126,7 @@ const privacyCopy = {
       "Se ritieni che il trattamento dei tuoi dati personali violi la normativa applicabile, puoi presentare reclamo al Garante per la protezione dei dati personali.",
 
     cookies:
-      "Il sito utilizza strumenti tecnici necessari al proprio funzionamento e alla sicurezza del servizio. Non utilizziamo i dati raccolti tramite il sito per attività di profilazione pubblicitaria. Qualora in futuro vengano introdotti strumenti di analytics, advertising, pixel o tecnologie che richiedano consenso, la gestione dei cookie e questa informativa verranno aggiornate di conseguenza.",
+      "Il sito utilizza strumenti tecnici necessari al proprio funzionamento e alla sicurezza. La preferenza della lingua viene salvata nella memoria locale del browser. La chat usa un token temporaneo per mantenere il contesto della conversazione, con scadenza di 30 minuti. Il sito non incorpora mappe o contenuti social: i collegamenti a servizi esterni, come Google Maps, Instagram o Facebook, trasmettono dati al relativo servizio quando li apri. Non utilizziamo i dati raccolti tramite il sito per profilazione pubblicitaria. Se verranno introdotti strumenti di analytics, advertising, pixel o tecnologie che richiedono consenso, l'informativa sarà aggiornata.",
 
     updates:
       "Questa informativa può essere aggiornata quando cambiano i servizi utilizzati, le modalità di trattamento o gli obblighi normativi. La data dell'ultimo aggiornamento è indicata all'inizio della pagina.",
@@ -133,7 +139,7 @@ const privacyCopy = {
 
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: 6 October 2026",
+    updated: "Last updated: 17 October 2026",
 
     sections: {
       controller: "1. Data controller",
@@ -151,7 +157,7 @@ const privacyCopy = {
     },
 
     controller:
-      "The Data Controller operates the Makai Grand Line venue. For any request concerning the protection of personal data, you may use the email address shown above.",
+      "The Data Controller operates the Makai Grand Line venue. The appointed Data Protection Officer (DPO) is Alessio Esposito and can be contacted at the email address shown above.",
 
     dataIntro:
       "When you use the website, make an online booking, call the venue or contact our staff regarding a booking, we may process the following data:",
@@ -167,6 +173,11 @@ const privacyCopy = {
       "booking status, including changes, cancellations and no-shows;",
       "information concerning service communications relating to the booking;",
       "change or cancellation requests, staff decisions and reconfirmations received through the personal link;",
+      "messages sent to the Nostromo chatbot and information entered during the conversation; temporary chat context is transmitted in a signed token and expires after 30 minutes;",
+      "waiting-list requests, including name, telephone number, email if provided, date, time, party size, notes, status and change history;",
+      "service-communication data, such as recipient, channel, prepared content, sending status, provider identifiers and any errors;",
+      "IP address and technical data used temporarily to limit abuse and protect the service;",
+      "website language preference, stored in the browser's local storage;",
       "technical data strictly necessary for the operation and security of the service.",
     ],
 
@@ -179,7 +190,7 @@ const privacyCopy = {
     purposes: [
       {
         title: "Booking management",
-        text: "We use your data to register and manage your booking, check availability, assign a table, handle changes or cancellations and contact you when necessary. Legal basis: steps taken at your request or performance of the requested service under Article 6(1)(b) GDPR.",
+        text: "We use your data to register and manage your booking, check availability, assign a table, handle changes or cancellations and contact you when necessary. The Nostromo chatbot may be used to answer requests and start a booking; its context is temporary. Legal basis for booking management: steps taken at your request or performance of the requested service under Article 6(1)(b) GDPR.",
       },
       {
         title: "Service communications",
@@ -187,7 +198,7 @@ const privacyCopy = {
       },
       {
         title: "Operational management and booking history",
-        text: "Information concerning bookings, changes, cancellations, arrivals, no-shows and relevant communications may be used by authorised staff to manage the service and reconstruct relevant operational events associated with a booking.",
+        text: "Information concerning bookings, waiting-list requests, changes, cancellations, arrivals, no-shows and relevant communications may be used by authorised staff to manage the service and reconstruct relevant operational events. Communications may be recorded together with their technical sending status.",
       },
       {
         title: "Marketing and promotions",
@@ -199,11 +210,10 @@ const privacyCopy = {
       "Providing the data necessary for a booking is required in order for us to manage and confirm it. Marketing consent is optional, separate from the booking and is never required in order to use Makai's services.",
 
     retention: [
-      "Booking data is retained for the period necessary to manage the service and according to the retention periods configured in Makai's systems.",
-      "Without consent to remember your details for future bookings, the system provides for an ordinary expiry of personal booking data after 30 days.",
-      "Where consent to remember your details for future bookings has been provided, data may be retained for up to 12 months.",
-      "Data relating to marketing consent and promotional activities may be retained for up to 24 months from the date of consent, unless consent is withdrawn earlier.",
-      "Certain information may be retained for longer where necessary to comply with legal obligations, establish or defend legal claims, or document relevant events, in accordance with the principles of necessity and data minimisation.",
+      "Bookings and related operational data — including DOPOCENA requests, customer requests, waiting-list entries and history, booking history, tokens, technical receipts and communication logs — are automatically deleted 30 days after the service or request date.",
+      "Temporary Nostromo chatbot context expires after 30 minutes. Messages are not stored as a chat history in the database; if the conversation leads to a booking, the necessary data is recorded in the booking.",
+      "Data relating to marketing consent and promotional activities are retained for up to 12 months from consent registration or renewal. Withdrawal immediately stops promotional use; proof of consent is retained for no more than 12 months from registration or renewal.",
+      "Certain information may be retained longer where necessary to comply with legal obligations or establish or defend legal claims, in accordance with the principles of necessity and data minimisation.",
     ],
 
     providersIntro:
@@ -211,8 +221,9 @@ const privacyCopy = {
 
     providers: [
       "Supabase, for database, authentication and backend services;",
-      "Vercel, for website hosting and delivery;",
+      "Vercel, for hosting and delivery of the website and backend services;",
       "Resend, for sending booking-related emails.",
+      "WhatsApp/Meta, when you choose to contact the venue through WhatsApp or, if you have consented, to receive promotional communications through that channel.",
     ],
 
     providersOutro:
@@ -244,7 +255,7 @@ const privacyCopy = {
       "If you believe that the processing of your personal data infringes applicable data protection law, you may lodge a complaint with the Italian Data Protection Authority (Garante per la protezione dei dati personali).",
 
     cookies:
-      "The website uses technical tools required for its operation and security. We do not use information collected through the website for advertising profiling. If analytics, advertising tools, pixels or other technologies requiring consent are introduced in the future, cookie management and this policy will be updated accordingly.",
+      "The website uses technical tools required for its operation and security. Your language preference is saved in the browser's local storage. The chatbot uses a temporary token to maintain conversation context, which expires after 30 minutes. The website does not embed maps or social content: links to external services such as Google Maps, Instagram or Facebook send data to the relevant service when opened. We do not use website data for advertising profiling. If analytics, advertising tools, pixels or other technologies requiring consent are introduced, this policy will be updated.",
 
     updates:
       "This policy may be updated when the services we use, our processing activities or applicable legal requirements change. The date of the latest update is shown at the top of this page.",
@@ -266,7 +277,7 @@ export default function Privacy() {
 
       <main className="privacy-main">
         <div className="privacy-card">
-          <h1>{copy.title}</h1>
+          <SiteHeading as="h1" className="privacy-title">{copy.title}</SiteHeading>
           <p className="privacy-updated">{copy.updated}</p>
 
           <h2>{copy.sections.controller}</h2>

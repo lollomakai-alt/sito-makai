@@ -29,61 +29,7 @@
   margin-top: clamp(10px, 3vw, 20px);
 }
 
-/* TITOLO */
-.about-section > .about-home-title,
-.content-section > .home-section-title {
-  margin: 0;
-  color: #f5d77f;
-  font-size: clamp(2.6rem, 11vw, 5.2rem);
-  line-height: 1.08;
-  letter-spacing: clamp(2px, 0.55vw, 6px);
-  -webkit-text-stroke: 0.7px #171007;
-  text-shadow: 0 3px 0 #171007, 0 6px 10px rgba(0, 0, 0, 0.9);
-}
-
-.about-heading-divider,
-.home-heading-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(12px, 2vw, 22px);
-  width: min(70%, 380px);
-  margin: 12px auto clamp(20px, 3vw, 34px);
-  color: #f5d77f;
-}
-
-.about-heading-divider img,
-.home-heading-divider img {
-  display: block;
-  flex: none;
-  width: clamp(34px, 6vw, 54px);
-  height: auto;
-}
-
-.about-heading-divider span,
-.home-heading-divider span {
-  position: relative;
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #f5d77f);
-}
-
-.about-heading-divider span::after,
-.home-heading-divider span::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 0;
-  width: 5px;
-  height: 5px;
-  border: 1px solid currentColor;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-.about-heading-divider span:last-child,
-.home-heading-divider span:last-child {
-  transform: scaleX(-1);
-}
+.about-section .site-heading { margin-bottom: clamp(20px, 3vw, 34px); }
 
 .about-title {
   /* usa .section-title da app.css; qui solo margini specifici */

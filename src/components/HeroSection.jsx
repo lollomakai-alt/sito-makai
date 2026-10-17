@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { siteCopy } from "../i18n/copy";
 import { useLanguage } from "../i18n/LanguageContext";
+import SiteHeading from "./SiteHeading";
 
 const wallPhotos = [
   { src: "menu.webp" },
@@ -111,15 +112,7 @@ export default function HeroSection() {
       <div className="hero-content">
         <div className="hero-copy-panel">
           <p className="hero-kicker">{copy.eyebrow}</p>
-          <h1 id="hero-title" className="hero-title">{copy.title}</h1>
-          <div className="hero-divider" aria-hidden="true">
-            <img
-              src={`${import.meta.env.BASE_URL}images/hero/straw-hat-skull.svg`}
-              alt=""
-              width="54"
-              height="42"
-            />
-          </div>
+          <SiteHeading as="h1" id="hero-title" className="hero-title">{copy.title}</SiteHeading>
           <p className="hero-subtitle">{copy.description}</p>
         </div>
       </div>

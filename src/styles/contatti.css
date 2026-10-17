@@ -13,20 +13,6 @@
   scroll-margin-top: 110px;
 }
 
-.contacts-title {
-  margin: 0 0 clamp(24px, 4vw, 48px);
-  font-family: 'Pirata One', Georgia, serif;
-  font-size: clamp(2.5rem, 6vw, 4.4rem);
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: clamp(2px, 0.5vw, 6px);
-  text-transform: uppercase;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
-}
-
 .contacts-layout {
   display: grid;
   grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);

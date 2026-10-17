@@ -60,20 +60,49 @@ img {
    Shared across all sections — single source of truth
    ============================================================ */
 
-/* ---------- SECTION TITLE (h1 / h2 principale) ---------- */
-.section-title {
-  margin: 0 0 clamp(24px, 4vw, 48px);
+/* ---------- SHARED SITE TITLE (section and page headings) ---------- */
+.section-title,
+.site-heading-title {
   font-family: 'Pirata One', Georgia, serif;
   font-size: clamp(2.5rem, 6vw, 4.4rem);
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: clamp(2px, 0.5vw, 6px);
   text-transform: uppercase;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
+  color: #f5d77f;
+  -webkit-text-stroke: 0.7px #171007;
+  text-shadow: 0 3px 0 #171007, 0 6px 10px rgba(0, 0, 0, 0.9);
 }
+
+.site-heading { margin: 0 auto clamp(24px, 4vw, 48px); text-align: center; }
+.site-heading-title { display: block; margin: 0; text-wrap: balance; }
+.site-heading-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 22px);
+  width: min(70%, 380px);
+  margin: 12px auto 0;
+  color: #f5d77f;
+}
+.site-heading-divider img { display: block; flex: none; width: clamp(34px, 6vw, 54px); height: auto; }
+.site-heading-divider span {
+  position: relative;
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #f5d77f);
+}
+.site-heading-divider span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 5px;
+  height: 5px;
+  border: 1px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+}
+.site-heading-divider span:last-child { transform: scaleX(-1); }
 
 /* ---------- SUBTITLE / BODY PARAGRAPH ---------- */
 .section-subtitle {
@@ -116,22 +145,7 @@ img {
   background: rgba(8, 15, 22, 0.72);
 }
 
-/* ---------- HERO TITLE (keeps Pirata One + gold + stroke) ---------- */
-.hero-title {
-  font-family: 'Pirata One', Georgia, serif;
-  font-size: clamp(2rem, 1rem + 4.5vw, 4.4rem);
-  max-width: 100%;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-  font-weight: 400;
-  color: #B08D2F;
-  -webkit-text-stroke: 1.5px #000;
-  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 6px 18px rgba(0,0,0,0.85);
-  text-transform: uppercase;
-  line-height: 1.1;
-  margin: 0;
-  letter-spacing: clamp(3px, 0.6vw, 9px);
-}
+.site-heading-title--hero { max-width: 100%; font-size: clamp(2rem, 1rem + 4.5vw, 4.4rem); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
