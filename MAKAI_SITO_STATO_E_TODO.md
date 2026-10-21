@@ -1,3 +1,8 @@
+## Push su main e deploy automatici email obbligatoria — 21 ottobre 2026
+- **DEPLOYATO:** Sito commit `796b361` — Vercel `dpl_5Mohm4BjGgDgJbttVn8qq4k88cft` READY, alias pubblici Makaipigneto confermati. Backend commit `c96fc02` — Vercel `dpl_4yoBRCiLyUup1HSojg3j9zxakZNQ` READY, alias Backend confermati. Deploy avviati automaticamente dal push su `main`; nessun deploy manuale.
+- **VERIFICATO IN PRODUZIONE:** GET Sito `/api/health` e `/prenotazioni` HTTP 200; GET Backend `/api/health` HTTP 200. Query Supabase in sola lettura: `public.bookings.email` e `private.online_dopocena_requests.email` sono `text NOT NULL`; nessuna migrazione richiesta.
+- **DA FARE:** prova prenotazione controllata a cura dell’utente per verificare visualmente il campo email obbligatorio e il flusso live. Nessun modulo o prenotazione inviati in questa verifica.
+
 ## Altri refusi comuni email riconosciuti — 21 ottobre 2026
 - **IMPLEMENTATO LOCALMENTE nel Backend:** esteso il riconoscimento ai provider Gmail, Hotmail, Outlook, Yahoo e iCloud; ora rileva anche lettere adiacenti invertite (es. `gmial.com`), mancanti o ripetute, alcuni domini frequenti e terminazioni `.com` digitate male. Il form continua a mostrare l’errore esplicativo e il suggerimento. Non corregge in automatico.
 - **Verifica:** nessun test o browser eseguito in questo passaggio; `git diff --check` superato.
