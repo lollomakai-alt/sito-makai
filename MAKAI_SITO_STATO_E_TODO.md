@@ -1,3 +1,23 @@
+## Altri refusi comuni email riconosciuti — 21 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE nel Backend:** esteso il riconoscimento ai provider Gmail, Hotmail, Outlook, Yahoo e iCloud; ora rileva anche lettere adiacenti invertite (es. `gmial.com`), mancanti o ripetute, alcuni domini frequenti e terminazioni `.com` digitate male. Il form continua a mostrare l’errore esplicativo e il suggerimento. Non corregge in automatico.
+- **Verifica:** nessun test o browser eseguito in questo passaggio; `git diff --check` superato.
+- **DA FARE:** test/build e controllo browser prima del rilascio. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no.
+
+## Messaggio di errore dominio email più chiaro — 21 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE nel Backend:** l’errore ora spiega che il dominio sembra scritto male, chiede di correggerlo e riprovare, quindi propone il dominio probabile. La risposta viene già mostrata nel modulo come avviso accessibile (`role="alert"`).
+- **Verifica:** `git diff --check` superato nel Backend; nessun test o controllo browser eseguito in questo passaggio.
+- **DA FARE:** controllo visivo e prove locali prima del rilascio. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no.
+
+## Suggerimento per refusi nei domini email — 21 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE nel Backend condiviso:** il controllo rileva alcuni refusi evidenti nei domini di provider comuni (per esempio `gmial.com` o `gmail.con`) e restituisce un suggerimento nel messaggio di errore. Il sistema non modifica l’indirizzo automaticamente e resta un solo campo email. Non verifica l’esistenza della casella né copre ogni dominio.
+- **Verifica:** in questo passaggio non sono stati eseguiti test, build o controllo browser. La nota precedente sui test si riferisce alla modifica dell’email obbligatoria prima di questo controllo aggiuntivo.
+- **DA FARE:** verificare il messaggio nel browser e ripetere test/build prima del rilascio coordinato. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no.
+
+## Email obbligatoria nelle prenotazioni online — 21 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** il campo email del modulo condiviso CENA/DOPOCENA è obbligatorio, marcato con asterisco e senza dicitura facoltativa in IT/EN. Il telefono resta obbligatorio. Il Backend verifica email presente e formalmente valida sia nel modello della route pubblica sia nel servizio, prima del database; inserimenti ADMIN e prenotazioni esistenti invariati. Consenso marketing sempre facoltativo.
+- **Evidenze:** Sito 17/17 test JavaScript e build Vite 57 moduli in cartella temporanea; Backend 168/168 test, inclusi casi email assente/vuota/spazi/non valida per entrambi i servizi e assenza di scritture/notifiche nei casi rifiutati. Test Backend con caricamento `.env` e connessione reale disabilitati; diff check superati.
+- **DA FARE:** prova browser/dispositivo e rilascio coordinato Sito/Backend su richiesta separata. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit/push/deploy, SQL, invio reale o modifica a prenotazioni esistenti.
+
 # Sito Makai — Stato e attività
 ## Push Sito e Backend, Agenda esclusa — 17 ottobre 2026
 - **DEPLOYATO:** commit applicativo Sito `b0751c8a25b11ccaac41e60fb44713169075e5b6` inviato a `origin/main`; Vercel deployment `dpl_6R7H4t9i6VyB1k12N7wdmGAUohKc` READY e associato a `www.makaipigneto.it`, `sito-makai.vercel.app`, `prenota.makaipigneto.it` e dominio principale. Backend `f74d212` anch'esso inviato e READY sul dominio stabile. Il successivo aggiornamento di questo registro non cambia il codice applicativo.

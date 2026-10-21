@@ -198,7 +198,7 @@ export default function BookingPage({ containerRef }) {
               <label className="booking-field">{t("Nome e cognome", "Full name")} *<input name="name" autoComplete="name" required minLength="2" maxLength="60" placeholder={t("Nome e cognome", "Full name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
               <div className="booking-field">{t("La tua scelta", "Your choice")}<p className="booking-selected-slot"><strong>{bookingType === "dopocena" ? "DOPOCENA" : "CENA"} · {bookingTime}</strong><small>{t("Puoi cambiare orario dai pulsanti sopra.", "You can change the time using the buttons above.")}</small></p></div>
-              <label className="booking-field">{t("Email (facoltativa)", "Email (optional)")}<input name="email" type="email" autoComplete="email" maxLength="120" /></label>
+              <label className="booking-field">{t("Email", "Email")} *<input name="email" type="email" autoComplete="email" required maxLength="120" /></label>
               <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="300" /></label>
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
