@@ -1,3 +1,11 @@
+## Refusi email combinati e conferma esplicita nel modulo — 21 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** nuovo helper `src/utils/emailTypo.js`, allineato ai domini e ai refusi riconosciuti dal Backend. Rileva refusi singoli e combinati come `gnail.con`, `gmial.com` o `gmail.con` e restituisce solo un suggerimento, senza modificare il valore digitato.
+- **Comportamento del modulo:** appena il cliente scrive un dominio riconosciuto come refuso, il suggerimento compare vicino al campo email con un avviso accessibile (`role="status"`, `aria-live="polite"`). La correzione viene applicata soltanto dopo il clic esplicito su “Usa questo indirizzo” / “Use this address”; non esiste alcuna riscrittura automatica. Il server continua a rifiutare il refuso anche se il browser viene aggirato.
+- **Perimetro:** flussi CENA/DOPOCENA, campi obbligatori, consenso privacy e consenso marketing invariati. Domini validi ma insoliti non vengono segnalati: l’elenco è limitato a refusi noti ad alta confidenza, non a un’allowlist di provider.
+- **File:** `src/pages/BookingPage.jsx`, `src/utils/emailTypo.js`, `src/styles/prenotazioni.css`, `tests/emailTypo.test.js` e questo registro.
+- **Verifiche locali:** `npm run test:js` 20/20 con tre nuovi test su refusi singoli/combinati, domini validi insoliti e conferma esplicita; `npm run build` Vite riuscita con 58 moduli; `git diff --check` superato.
+- **DA FARE:** prova browser/iPhone del suggerimento prima del rilascio coordinato con il Backend. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push, deploy, SQL, invio email o modifica ai dati.
+
 ## Push su main e deploy automatici email obbligatoria — 21 ottobre 2026
 - **DEPLOYATO:** Sito commit `796b361` — Vercel `dpl_5Mohm4BjGgDgJbttVn8qq4k88cft` READY, alias pubblici Makaipigneto confermati. Backend commit `c96fc02` — Vercel `dpl_4yoBRCiLyUup1HSojg3j9zxakZNQ` READY, alias Backend confermati. Deploy avviati automaticamente dal push su `main`; nessun deploy manuale.
 - **VERIFICATO IN PRODUZIONE:** GET Sito `/api/health` e `/prenotazioni` HTTP 200; GET Backend `/api/health` HTTP 200. Query Supabase in sola lettura: `public.bookings.email` e `private.online_dopocena_requests.email` sono `text NOT NULL`; nessuna migrazione richiesta.

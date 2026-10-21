@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { receiptMessage, formError, explainInvalidInput, clearInputExplanation } from "../i18n/bookingFeedback";
+import { suggestEmailCorrection } from "../utils/emailTypo";
 import SiteNav from "../components/SiteNav";
 import SiteHeading from "../components/SiteHeading";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -17,6 +18,8 @@ export default function BookingPage({ containerRef }) {
   const [reviewed, setReviewed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [emailValue, setEmailValue] = useState('');
+  const [emailSuggestion, setEmailSuggestion] = useState(null);
   const [receipt, setReceipt] = useState(null);
   const submitRequest = useRef(null);
   const submitting = useRef(false);
@@ -84,6 +87,16 @@ export default function BookingPage({ containerRef }) {
   function showAvailability() {
     setSelected(null); setReviewed(false); scrollPending.current = true;
     setConfirmedGuests(guests); setRequestVersion(value => value + 1);
+  }
+  function handleEmailChange(event) {
+    const value = event.currentTarget.value;
+    setEmailValue(value);
+    setEmailSuggestion(suggestEmailCorrection(value));
+  }
+  function applyEmailSuggestion() {
+    if (!emailSuggestion) return;
+    setEmailValue(emailSuggestion);
+    setEmailSuggestion(null);
   }
   async function submitBooking(event) {
     event.preventDefault();
@@ -198,7 +211,14 @@ export default function BookingPage({ containerRef }) {
               <label className="booking-field">{t("Nome e cognome", "Full name")} *<input name="name" autoComplete="name" required minLength="2" maxLength="60" placeholder={t("Nome e cognome", "Full name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
               <div className="booking-field">{t("La tua scelta", "Your choice")}<p className="booking-selected-slot"><strong>{bookingType === "dopocena" ? "DOPOCENA" : "CENA"} · {bookingTime}</strong><small>{t("Puoi cambiare orario dai pulsanti sopra.", "You can change the time using the buttons above.")}</small></p></div>
-              <label className="booking-field">{t("Email", "Email")} *<input name="email" type="email" autoComplete="email" required maxLength="120" /></label>
+              <div className="booking-field booking-field-email">
+                <label htmlFor="booking-email">{t("Email", "Email")} *</label>
+                <input id="booking-email" name="email" type="email" autoComplete="email" required maxLength="120" value={emailValue} onChange={handleEmailChange} aria-describedby={emailSuggestion ? "booking-email-suggestion" : undefined} />
+                {emailSuggestion && <p id="booking-email-suggestion" className="booking-email-suggestion" role="status" aria-live="polite">
+                  {t(`Forse intendevi ${emailSuggestion}? Controlla e correggi l’indirizzo: non lo modifichiamo automaticamente.`, `Did you mean ${emailSuggestion}? Check and correct the address: we never change it automatically.`)}
+                  {" "}<button type="button" className="booking-email-suggestion-action" onClick={applyEmailSuggestion}>{t("Usa questo indirizzo", "Use this address")}</button>
+                </p>}
+              </div>
               <label className="booking-field booking-field-notes">{t("Note (facoltative)", "Notes (optional)")}<textarea name="notes" rows="3" maxLength="300" /></label>
             </div>
             <p className="booking-help">{t("Non inserire informazioni sulla salute nelle note. I campi con * sono obbligatori.", "Do not include health information in the notes. Fields marked * are required.")}</p>
