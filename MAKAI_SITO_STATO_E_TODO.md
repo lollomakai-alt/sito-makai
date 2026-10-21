@@ -4,7 +4,8 @@
 - **Perimetro:** flussi CENA/DOPOCENA, campi obbligatori, consenso privacy e consenso marketing invariati. Domini validi ma insoliti non vengono segnalati: l’elenco è limitato a refusi noti ad alta confidenza, non a un’allowlist di provider.
 - **File:** `src/pages/BookingPage.jsx`, `src/utils/emailTypo.js`, `src/styles/prenotazioni.css`, `tests/emailTypo.test.js` e questo registro.
 - **Verifiche locali:** `npm run test:js` 20/20 con tre nuovi test su refusi singoli/combinati, domini validi insoliti e conferma esplicita; `npm run build` Vite riuscita con 58 moduli; `git diff --check` superato.
-- **DA FARE:** prova browser/iPhone del suggerimento prima del rilascio coordinato con il Backend. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push, deploy, SQL, invio email o modifica ai dati.
+- **SALVATO SU GITHUB:** commit `c8698ce` su `origin/main`. Il push può aver attivato un deploy automatico Vercel; lo stato del deployment va verificato separatamente.
+- **DA FARE:** verifica deploy Vercel, prova browser/iPhone del suggerimento e rilascio coordinato con il Backend. **DEPLOYATO:** non attestato in questa sessione. **VERIFICATO IN PRODUZIONE:** no. Nessun SQL, invio email o modifica ai dati.
 
 ## Push su main e deploy automatici email obbligatoria — 21 ottobre 2026
 - **DEPLOYATO:** Sito commit `796b361` — Vercel `dpl_5Mohm4BjGgDgJbttVn8qq4k88cft` READY, alias pubblici Makaipigneto confermati. Backend commit `c96fc02` — Vercel `dpl_4yoBRCiLyUup1HSojg3j9zxakZNQ` READY, alias Backend confermati. Deploy avviati automaticamente dal push su `main`; nessun deploy manuale.
