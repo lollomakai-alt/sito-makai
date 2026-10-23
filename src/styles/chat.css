@@ -231,6 +231,25 @@
   cursor: pointer;
 }
 
+.chat-topic-reset {
+  align-self: flex-start;
+  min-height: 28px;
+  margin: 2px 12px 0;
+  padding: 3px 6px;
+  border: 0;
+  color: #f0c75e;
+  background: transparent;
+  font: 0.72rem Georgia, 'Times New Roman', serif;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.chat-topic-reset:focus-visible {
+  outline: 2px solid #ffe397;
+  outline-offset: 1px;
+}
+
 .chat-quick-questions button:hover,
 .chat-quick-questions button:focus-visible {
   color: #21140b;

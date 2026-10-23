@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localReply, requestReply, errorMessage, quickQuestions } from '../src/utils/nostromo.js';
+import { localReply, requestReply, errorMessage, quickQuestionGroups, quickQuestions } from '../src/utils/nostromo.js';
 
 const ok = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 const noNetwork = () => { assert.fail('This request must not reach the conversational API'); };
@@ -19,7 +19,10 @@ const menuFetch = async (url, options) => {
 };
 
 test('greetings, thanks and unclear questions receive useful local guidance', async () => {
-  assert.equal(quickQuestions.length, 3); // The fourth visible choice is “Cambia argomento”.
+  assert.equal(quickQuestions.length, 4);
+  assert.deepEqual(quickQuestionGroups.map(group => group.id), ['food', 'drink', 'locale', 'events']);
+  assert.ok(quickQuestionGroups[2].questions.some(question => /parcheggi/i.test(question)));
+  assert.ok(quickQuestionGroups[3].questions.some(question => /compleanno|eventi/i.test(question)));
   for (const message of ['Ciao!', 'Ahoy', 'buonasera', 'Hi']) {
     assert.match((await requestReply(message, { fetchImpl: noNetwork })).reply, /Sono Nostromo/);
   }
@@ -27,10 +30,19 @@ test('greetings, thanks and unclear questions receive useful local guidance', as
   for (const message of ['aiuto', 'non ho capito', 'cosa mi consigli?']) {
     const result = await requestReply(message, { fetchImpl: noNetwork });
     assert.match(result.reply, /dettaglio in più/);
-    assert.ok(result.quickReplies.includes('Menu da mangiare'));
+    assert.equal(result.quickReplies.length, 4);
   }
   const choice = await requestReply('Mostrami il menù', { fetchImpl: noNetwork });
   assert.match(choice.reply, /da mangiare o da bere/);
+});
+
+test('the rotating quick-question catalog covers four customer topics with seven choices each', () => {
+  assert.equal(quickQuestionGroups.length, 4);
+  assert.deepEqual(quickQuestionGroups.map(group => group.questions.length), [7, 7, 7, 7]);
+  assert.match(quickQuestionGroups[0].questions[6], /allergia/);
+  assert.match(quickQuestionGroups[1].questions[4], /analcolici/);
+  assert.match(quickQuestionGroups[2].questions[0], /parcheggi/);
+  assert.match(quickQuestionGroups[3].questions[0], /compleanno/);
 });
 
 test('known navigation typos are corrected without guessing ingredients or vegan suitability', async () => {
@@ -92,12 +104,12 @@ test('dietary variations are agreed by phone or at the restaurant, with staff ch
 
 test('general locale/event questions still use existing chat contract and temporary session', async () => {
   let calls = 0;
-  const result = await requestReply('Informazioni per un compleanno', { sessionToken: 'signed-session', fetchImpl: async (url, options) => {
+  const result = await requestReply('Raccontami del locale', { sessionToken: 'signed-session', fetchImpl: async (url, options) => {
     calls++;
     assert.equal(url, '/api/chat');
     assert.equal(options.method, 'POST');
     assert.equal(options.cache, 'no-store');
-    assert.deepEqual(JSON.parse(options.body), { message: 'Informazioni per un compleanno', session_token: 'signed-session' });
+    assert.deepEqual(JSON.parse(options.body), { message: 'Raccontami del locale', session_token: 'signed-session' });
     return ok({ reply: 'Ahoy! Ecco le indicazioni del locale.', session_token: 'next-session', quick_replies: ['Orari?', 'Orari?', '', null, 'x'.repeat(121), 'Eventi?'] });
   } });
   assert.equal(calls, 1);
@@ -183,7 +195,7 @@ test('cancellation before starting also prevents immediate local answers', async
 
 test('upstream booking and unverified food claims cannot restart the old conversation flow', async () => {
   for (const reply of ['La prenotazione è confermata!', 'Abbiamo tavoli disponibili.', 'Questo piatto costa 12 euro.', 'Sono 25€.', 'Il sushi è senza glutine.', 'È vegano, garantito.']) {
-    const result = await requestReply('Informazioni per un compleanno', { fetchImpl: async () => ok({ reply, session_token: 'do-not-retain', quick_replies: ['Conferma'] }) });
+    const result = await requestReply('Raccontami del locale', { fetchImpl: async () => ok({ reply, session_token: 'do-not-retain', quick_replies: ['Conferma'] }) });
     assert.notEqual(result.reply, reply);
     assert.equal(result.sessionToken, null);
     assert.ok(!result.quickReplies.includes('Conferma'));
@@ -196,25 +208,25 @@ test('rejects invalid input before contacting the API', async () => {
 
 test('empty, malformed and excessive responses become recoverable errors', async () => {
   for (const data of [null, {}, { reply: '' }, { reply: '   ' }, { reply: 123 }, { reply: 'x'.repeat(8001) }]) {
-    await assert.rejects(requestReply('Informazioni per un compleanno', { fetchImpl: async () => ok(data) }));
+    await assert.rejects(requestReply('Raccontami del locale', { fetchImpl: async () => ok(data) }));
   }
-  await assert.rejects(requestReply('Informazioni per un compleanno', { fetchImpl: async () => new Response('<html>bad gateway</html>') }));
+  await assert.rejects(requestReply('Raccontami del locale', { fetchImpl: async () => new Response('<html>bad gateway</html>') }));
 });
 
 test('HTTP and network errors do not leak internal messages or retry automatically', async () => {
   for (const status of [400, 500, 502, 503]) {
     let calls = 0;
-    await assert.rejects(requestReply('Informazioni per un compleanno', { fetchImpl: async () => { calls++; return new Response('secret internal detail', { status }); } }), error => {
+    await assert.rejects(requestReply('Raccontami del locale', { fetchImpl: async () => { calls++; return new Response('secret internal detail', { status }); } }), error => {
       assert.doesNotMatch(errorMessage(error), /secret|500|502|503/);
       return true;
     });
     assert.equal(calls, 1);
   }
-  await assert.rejects(requestReply('Informazioni per un compleanno', { fetchImpl: async () => { throw new TypeError('network private details'); } }), error => error.code === 'unavailable');
+  await assert.rejects(requestReply('Raccontami del locale', { fetchImpl: async () => { throw new TypeError('network private details'); } }), error => error.code === 'unavailable');
 });
 
 test('rate limits preserve Retry-After guidance for the UI cooldown', async () => {
-  await assert.rejects(requestReply('Informazioni per un compleanno', { fetchImpl: async () => new Response('', { status: 429, headers: { 'Retry-After': '30' } }) }), error => {
+  await assert.rejects(requestReply('Raccontami del locale', { fetchImpl: async () => new Response('', { status: 429, headers: { 'Retry-After': '30' } }) }), error => {
     assert.equal(error.code, 'rate-limit');
     assert.equal(error.retryAfter, 30);
     assert.match(errorMessage(error), /30 secondi/);
@@ -227,9 +239,45 @@ test('timeout aborts a slow request and distinguishes it from user cancellation'
     const abort = () => reject(new DOMException('Aborted', 'AbortError'));
     if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
   });
-  await assert.rejects(requestReply('Informazioni per un compleanno', { timeoutMs: 10, fetchImpl: pending }), error => error.code === 'timeout');
+  await assert.rejects(requestReply('Raccontami del locale', { timeoutMs: 10, fetchImpl: pending }), error => error.code === 'timeout');
   const controller = new AbortController();
-  const result = requestReply('Informazioni per un compleanno', { signal: controller.signal, fetchImpl: pending });
+  const result = requestReply('Raccontami del locale', { signal: controller.signal, fetchImpl: pending });
   controller.abort();
   await assert.rejects(result, error => error.name === 'AbortError');
+});
+
+test('owner-approved venue answers work without upstream chat and preserve booking and allergy priority', async () => {
+  const examples = [
+    ['Avete piatti per bambini?', /carne con osso.*udon.*Cestino del Pirata/],
+    ['Mi consigli un cocktail poco dolce?', /Hurricane.*Belladonna.*Bourbon Special/],
+    ['Posso venire a bere dopo cena?', /22:30.*attendi la conferma/],
+    ['Posso portare il cane?', /benvenuto/],
+    ['Avete tavoli all’aperto?', /Abbiamo anche tavoli all’aperto/],
+    ['Siete accessibili in sedia a rotelle?', /accessibile in sedia a rotelle/],
+    ['Quali pacchetti festa proponete?', /Drink \+ torta.*Drink \+ snack.*Drink \+ prosecco/],
+    ['Come richiedo un preventivo?', /chiama la ciurma al 339 751 4140/i],
+    ['Posso privatizzare il locale?', /339 751 4140.*privatizzazione/],
+  ];
+  for (const [question, expected] of examples) {
+    const result = await requestReply(question, { fetchImpl: noNetwork });
+    assert.match(result.reply, expected);
+    assert.equal(result.sessionToken, null);
+    assert.doesNotMatch(result.reply, /€|euro/);
+  }
+  assert.match((await requestReply('Prenota un tavolo all’aperto', { fetchImpl: noNetwork })).reply, /non confermo prenotazioni/);
+  assert.match((await requestReply('Un piatto per bambini allergici al sesamo', { fetchImpl: noNetwork })).reply, /non può confermare via chat/);
+});
+
+test('gluten and lactose variations keep contamination limits and do not override other allergies', async () => {
+  const gluten = await requestReply('Avete piatti senza glutine?', { fetchImpl: noNetwork });
+  assert.match(gluten.reply, /farina e salsa di soia senza glutine/);
+  assert.match(gluten.reply, /assenza di allergeni o contaminazioni/);
+  const lactose = await requestReply('Avete piatti senza lattosio?', { fetchImpl: noNetwork });
+  assert.match(lactose.reply, /variazioni ai piatti per il lattosio/);
+  assert.match(lactose.reply, /verifica ingredienti e preparazione/);
+  const both = await requestReply('Senza glutine e senza lattosio', { fetchImpl: noNetwork });
+  assert.match(both.reply, /glutine e lattosio/);
+  const allergy = await requestReply('Sono celiaco e allergico alla soia', { fetchImpl: noNetwork });
+  assert.doesNotMatch(allergy.reply, /Certo/);
+  assert.match(allergy.reply, /non può confermare/);
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BOOKING_PATH, classifyQuestion, errorMessage, quickQuestions, requestReply, welcomeMessage } from "../utils/nostromo.js";
+import { BOOKING_PATH, classifyQuestion, errorMessage, quickQuestionGroups, quickQuestions, requestReply, welcomeMessage } from "../utils/nostromo.js";
 import { contactInfo } from "../data/contactInfo.js";
 
 const linkPattern = /(\+?39\s?339\s?751\s?4140|339\s?751\s?4140|\/prenotazioni\/gestisci|\/prenotazioni|\/prenota|\/privacy|\/menu-food|\/menu-drink|\/#contatti)(?![\w/-])/g;
@@ -18,7 +18,8 @@ export default function ChatPanel({ isOpen, onClose }) {
   const [messages, setMessages] = useState([{ id: "welcome", sender: "bot", text: welcomeMessage }]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState(quickQuestions);
+  const [questionIndexes, setQuestionIndexes] = useState([0, 0, 0, 0]);
+  const [contextualQuestions, setContextualQuestions] = useState({});
   const [failedMessage, setFailedMessage] = useState(null);
   const [retryAt, setRetryAt] = useState(0);
   const [retryScope, setRetryScope] = useState("chat");
@@ -38,6 +39,10 @@ export default function ChatPanel({ isOpen, onClose }) {
     return ["menu", "food", "drink", "analcolici"].includes(topic) ? "menu" : topic === "chat" ? "chat" : null;
   };
   const needsCooldown = text => waitingSeconds > 0 && requestScope(text) === retryScope;
+  const visibleQuestions = quickQuestionGroups.map((group, slot) => {
+    const options = [...group.questions, ...(contextualQuestions[slot] ?? [])];
+    return { ...group, slot, text: options[questionIndexes[slot] % options.length] };
+  });
 
   useEffect(() => () => controllerRef.current?.abort(), []);
   useEffect(() => {
@@ -75,6 +80,13 @@ export default function ChatPanel({ isOpen, onClose }) {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [retryAt]);
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const timer = window.setInterval(() => {
+      setQuestionIndexes(current => current.map((index, slot) => (index + 1) % (quickQuestionGroups[slot].questions.length + (contextualQuestions[slot]?.length ?? 0))));
+    }, 12000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, contextualQuestions]);
 
   async function sendMessage(text, retry = false) {
     const cleanText = text.trim();
@@ -95,7 +107,11 @@ export default function ChatPanel({ isOpen, onClose }) {
       if (controller.signal.aborted) return;
       sessionTokenRef.current = data.sessionToken;
       setContext(data.context);
-      setSuggestions(data.quickReplies.length ? data.quickReplies : quickQuestions);
+      const topic = data.context?.topic;
+      const slot = topic === "food" ? 0 : ["drink", "analcolici"].includes(topic) ? 1 : /compleann|event|festa|apericena|pacchett/i.test(cleanText) ? 3 : 2;
+      const contextual = data.quickReplies.filter(question => !quickQuestions.includes(question)).slice(0, 4);
+      setContextualQuestions(current => ({ ...current, [slot]: contextual }));
+      if (contextual.length) setQuestionIndexes(current => current.map((index, itemSlot) => itemSlot === slot ? quickQuestionGroups[slot].questions.length : index));
       setMessages(current => [...current, { id: crypto.randomUUID(), sender: "bot", text: data.reply }]);
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -114,6 +130,16 @@ export default function ChatPanel({ isOpen, onClose }) {
         pendingTextRef.current = null;
       }
     }
+  }
+
+  function resetTopic() {
+    sessionTokenRef.current = null;
+    setContext({});
+    setContextualQuestions({});
+    setQuestionIndexes([0, 0, 0, 0]);
+    setFailedMessage(null);
+    followMessagesRef.current = true;
+    setMessages(current => [...current, { id: crypto.randomUUID(), sender: "bot", text: "Nuova rotta, Capitano! Chiedimi del locale, dei piatti, dei cocktail o degli eventi. Per prenotare apri /prenota." }]);
   }
 
   if (!isOpen) return null;
@@ -142,16 +168,13 @@ export default function ChatPanel({ isOpen, onClose }) {
       }}>Interrompi l’attesa</button>}
       {failedMessage && <button type="button" className="chat-retry" onClick={() => sendMessage(failedMessage, true)} disabled={isLoading || needsCooldown(failedMessage)}>{needsCooldown(failedMessage) ? `Riprova tra ${waitingSeconds}s` : "Riprova l’ultima domanda"}</button>}
       <div className="chat-quick-questions" aria-label="Domande suggerite">
-        {suggestions.map(question => <button key={question} type="button" onClick={() => sendMessage(question)} disabled={isLoading || needsCooldown(question)}>{question}</button>)}
-        <button type="button" onClick={() => {
-          sessionTokenRef.current = null;
-          setContext({});
-          setFailedMessage(null);
-          setSuggestions(quickQuestions);
-          followMessagesRef.current = true;
-          setMessages(current => [...current, { id: crypto.randomUUID(), sender: "bot", text: "Nuova rotta, Capitano! Chiedimi del locale, dei piatti o dei cocktail. Per prenotare apri /prenota." }]);
-        }} disabled={isLoading}>Cambia argomento</button>
+        {visibleQuestions.map(({ id, slot, text }) => <button key={id} type="button" onClick={() => {
+          const group = quickQuestionGroups[slot];
+          sendMessage(text);
+          setQuestionIndexes(current => current.map((index, itemSlot) => itemSlot === slot ? (index + 1) % (group.questions.length + (contextualQuestions[slot]?.length ?? 0)) : index));
+        }} disabled={isLoading || needsCooldown(text)}>{text}</button>)}
       </div>
+      <button className="chat-topic-reset" type="button" onClick={resetTopic} disabled={isLoading}>Cambia argomento</button>
       <form className="chat-input-area" onSubmit={event => { event.preventDefault(); sendMessage(input); }}>
         <input type="text" value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} placeholder="Chiedi a Nostromo…" maxLength={500} aria-label="Scrivi un messaggio" autoComplete="off" enterKeyHint="send" />
         <button className="send-btn" type="submit" disabled={isLoading || needsCooldown(input) || !input.trim()} aria-label="Invia messaggio">➤</button>

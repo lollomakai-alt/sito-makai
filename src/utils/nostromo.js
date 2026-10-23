@@ -1,9 +1,16 @@
+import { approvedVenueReply, dietaryReply } from "./nostromoFaq.js";
 import { contactInfo } from "../data/contactInfo.js";
 import { menuSearchTerms, normalize, normalizeQuestion, publishedMenuReply } from "./nostromoMenu.js";
 
 export const BOOKING_PATH = "/prenota";
 export const CHAT_TIMEOUT_MS = 15000;
-export const quickQuestions = ["Menu da mangiare", "Menu da bere", "Dove siete?"];
+export const quickQuestionGroups = [
+  { id: "food", questions: ["Mi consigli un piatto di carne?", "Mi consigli un piatto di pesce?", "Quali piatti vegetariani avete?", "Che dolci ci sono?", "Quali piatti avete nel menu?", "Sono celiaco: come posso chiedere informazioni?", "Ho un'allergia: come procedo?"] },
+  { id: "drink", questions: ["Mi consigli un cocktail?", "Mi consigli un cocktail con rum?", "Quale analcolico mi consigli?", "Mi consigli un drink della ciurma?", "Quali cocktail analcolici avete?", "Avete cocktail alla frutta?", "Quali cocktail fruttati avete?"] },
+  { id: "locale", questions: ["Ci sono parcheggi vicini?", "Come arrivo con la Metro C?", "Quali sono gli orari?", "Dove siete?", "Come vi contatto?", "Quali mezzi pubblici posso usare per arrivare?", "Siete aperti oggi?"] },
+  { id: "events", questions: ["Posso organizzare un compleanno?", "Quali pacchetti festa proponete?", "Fate apericena per gli eventi?", "Organizzate eventi privati?", "Posso festeggiare una laurea?", "Quali eventi organizzate?", "Come chiedo informazioni per una festa?"] },
+];
+export const quickQuestions = quickQuestionGroups.map(group => group.questions[0]);
 export const welcomeMessage = "Ahoy! Sono Nostromo, la guida del Makai. Posso cercare piatti e cocktail nei menu pubblicati o aiutarti con il locale. Per prenotare, la rotta è /prenota.";
 const bookingReply = "Ahoy! Per prenotare e consultare la disponibilità, apri /prenota. Qui in chat non verifico posti e non confermo prenotazioni. Per una prenotazione esistente usa il link ricevuto via email o chiama la ciurma al " + contactInfo.phoneDisplay + ".";
 const allergyReply = "Per allergie, intolleranze o ingredienti da escludere, le eventuali variazioni si concordano direttamente al telefono al " + contactInfo.phoneDisplay + " oppure al locale. La ciurma verifica ingredienti e preparazione: Nostromo non può confermare via chat l'assenza di allergeni o contaminazioni.";
@@ -28,6 +35,7 @@ export function classifyQuestion(message, context = {}) {
   if (/\b(allerg\w*|intolleran\w*|celiac\w*|glutine|gluten|contaminaz\w*|lattosio|lactose|nuts)\b|\b(senza|without)\s+(?!prenot|book|reserv|alcol|alcool|alcohol)\w+/.test(text)) return { topic: "allergy" };
   if (/\bvegetari\w*\b/.test(text)) return { topic: "vegetarian" };
   if (/\bvegan\w*\b/.test(text)) return { topic: "vegan" };
+  if (approvedVenueReply(text)) return { topic: "venue-faq" };
   const bookingText = text.replace(/\bnon (?:voglio|devo|intendo) prenotare\b/g, "");
   const explicitBooking = /\b(prenot\w*|disponibil\w*|conferm\w*|riconferm\w*|cancell\w*|annull\w*|tavol\w*|posti|posto|riserv\w*|book\w*|reserv\w*|availability|available|confirm\w*|cancel\w*|table|seats?)\b/.test(bookingText);
   // An explicit question about opening hours wins over isolated times/numbers.
@@ -54,11 +62,12 @@ export function classifyQuestion(message, context = {}) {
   return { topic: "chat" };
 }
 
-function immediateReply(topic) {
+function immediateReply(topic, message = "") {
+  if (topic === "venue-faq") return approvedVenueReply(normalizeQuestion(message));
   if (topic === "greeting") return welcomeMessage;
   if (topic === "thanks") return "Ai tuoi ordini, Capitano! Se ti serve altro, scegli una rotta qui sotto.";
   if (topic === "booking") return bookingReply;
-  if (topic === "allergy") return allergyReply;
+  if (topic === "allergy") return dietaryReply(normalizeQuestion(message)) || allergyReply;
   if (topic === "vegetarian") return vegetarianReply;
   if (topic === "vegan") return `Per esigenze vegane, chiedi direttamente alla ciurma al ${contactInfo.phoneDisplay} oppure al locale quali opzioni o variazioni sono possibili. Non deduco questa caratteristica dagli ingredienti descritti nel menu.`;
   if (topic === "contact") return contactsReply;
@@ -68,7 +77,7 @@ function immediateReply(topic) {
 }
 
 export function localReply(message, context = {}) {
-  return immediateReply(classifyQuestion(message, context).topic);
+  return immediateReply(classifyQuestion(message, context).topic, message);
 }
 
 // Response safety rules are separate from question intent: an opening time is
@@ -101,7 +110,7 @@ export async function requestReply(message, { sessionToken = null, context = {},
   if (!text || text.length > 500) throw new ChatError("invalid-input");
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const intent = classifyQuestion(text, context);
-  const reply = immediateReply(intent.topic);
+  const reply = immediateReply(intent.topic, text);
   if (reply) return { reply, quickReplies: suggestionsFor(intent.topic), sessionToken: null, context: intent };
 
   const isMenu = menuTopics.has(intent.topic);

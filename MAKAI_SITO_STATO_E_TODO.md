@@ -1,3 +1,10 @@
+## Risposte Nostromo confermate dal gestore — 23 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** risposte immediate in tono piratesco per farina e salsa di soia senza glutine, variazioni per lattosio, piatti bambini (carne con osso, udon, Cestino del Pirata), cocktail poco dolci (Hurricane, Belladonna, Bourbon Special), dopocena dalle 22:30, cani ammessi, tavoli esterni e accessibilità in sedia a rotelle. Informazioni comunicate direttamente dal gestore in questa sessione; non sono verifiche fisiche del locale.
+- **Eventi:** formule aperitivo, cena/apericena e dopocena; Drink + torta/snack/prosecco riprese dai file backend locali. Preventivi e privatizzazioni rimandano al telefono. Nessun prezzo pubblicato nelle nuove risposte per le discordanze tra codice e documentazione. Le risposte per allergie conservano verifica ingredienti/preparazione e limite sulle contaminazioni; richieste operative restano al modulo prenotazioni.
+- **Perimetro:** nuovo helper `src/utils/nostromoFaq.js`, collegamento in `nostromo.js`, test e questo registro; incluse le modifiche locali già presenti alle quattro caselle a rotazione. Backend e database non modificati.
+- **Verifiche:** 42/42 test JavaScript, build Vite riuscita (59 moduli), `git diff --check` superato. Test con trasporto simulato: risposte approvate senza API, priorità allergie/prenotazioni e nessuna stima prezzi. Nessuna prova browser/dispositivo o verifica live in questo intervento.
+- **Pubblicazione:** commit e push su `main` autorizzati dall’utente, in preparazione. **DEPLOYATO:** non verificato. **VERIFICATO IN PRODUZIONE:** no. **DA FARE:** verifica delle risposte nel sito dopo il rilascio automatico; cartella `.engram ` esclusa.
+
 ## Refusi email combinati e conferma esplicita nel modulo — 21 ottobre 2026
 - **IMPLEMENTATO LOCALMENTE:** nuovo helper `src/utils/emailTypo.js`, allineato ai domini e ai refusi riconosciuti dal Backend. Rileva refusi singoli e combinati come `gnail.con`, `gmial.com` o `gmail.con` e restituisce solo un suggerimento, senza modificare il valore digitato.
 - **Comportamento del modulo:** appena il cliente scrive un dominio riconosciuto come refuso, il suggerimento compare vicino al campo email con un avviso accessibile (`role="status"`, `aria-live="polite"`). La correzione viene applicata soltanto dopo il clic esplicito su “Usa questo indirizzo” / “Use this address”; non esiste alcuna riscrittura automatica. Il server continua a rifiutare il refuso anche se il browser viene aggirato.
@@ -35,6 +42,11 @@
 - **DA FARE:** prova browser/dispositivo e rilascio coordinato Sito/Backend su richiesta separata. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit/push/deploy, SQL, invio reale o modifica a prenotazioni esistenti.
 
 # Sito Makai — Stato e attività
+## Ripristino delle domande rapide a rotazione — 23 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** quattro gruppi di domande (cibo, cocktail, locale, eventi), sette alternative per gruppo, con quattro caselle mostrate alla volta. Cambiano ogni 12 secondi mentre la chat è aperta e il gruppo selezionato avanza al clic; eventuali risposte rapide contestuali vengono integrate nel gruppo pertinente. Incluse richieste su allergie, analcolici, parcheggio, trasporti, compleanni e feste di laurea. “Cambia argomento” resta testuale, senza quinta casella.
+- **Verifiche:** test sulla composizione dei gruppi, parcheggio, eventi e gestione chat; suite Sito `npm run test:js` e build Vite superate; `git diff --check` superato. Le indicazioni per parcheggio/trasporti e dettagli eventi sono domande al servizio conversazionale, non informazioni verificate dal Sito. Nessun controllo live.
+- **File:** `src/utils/nostromo.js`, `src/components/ChatPanel.jsx`, `src/styles/chat.css`, `tests/nostromo.test.js` e questo registro. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessun commit, push o deploy in questo passaggio.
+
 ## Pannello Nostromo con quattro scelte rapide — 23 ottobre 2026
 - **IMPLEMENTATO LOCALMENTE:** mostrati al massimo tre suggerimenti tematici più “Cambia argomento”, per quattro caselle totali. Ridotte leggermente altezza, carattere e spaziatura delle caselle per dare più spazio alla conversazione. I collegamenti Food, Drink, Chiama e Prenota restano nella barra dedicata.
 - **Evidenze:** `npm run test:js` e build Vite eseguiti; `git diff --check` superato. Nessun test live; deploy non effettuato.
