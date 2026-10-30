@@ -9,7 +9,7 @@ test('service and time pickers use live service slots and clear dependent select
   assert.match(page, /checked=\{bookingType === service\.value\}/);
   assert.match(page, /setBookingTime\(''\); setConfirmedGuests\(null\); setSelected\(null\); setReviewed\(false\)/);
   assert.match(page, /settings\?\.services\?\.\[bookingType\]/);
-  assert.match(page, /name="time" required value=\{time\} checked=\{bookingTime === time\}/);
+  assert.match(page, /name="time" required value=\{shift\.value\} checked=\{bookingTime === shift\.value\}/);
   assert.doesNotMatch(page, /<select[^>]*(?:booking-service|name="time")/);
 });
 

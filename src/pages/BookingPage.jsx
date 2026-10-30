@@ -124,12 +124,13 @@ export default function BookingPage({ containerRef }) {
   }
   const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available"), manual_review: t("Richiesta da confermare", "Request needs confirmation") };
   const serviceTimes = settings?.services?.[bookingType] || [];
-  const timeGroups = bookingType === "dopocena"
-    ? [{ key: "dopocena", label: t("DOPOCENA · 23:00–00:00", "AFTER DINNER · 23:00–00:00"), times: serviceTimes }]
+  const shifts = bookingType === "dopocena"
+    ? [{ value: "23:00", title: t("DOPOCENA", "AFTER DINNER"), hours: "23:00–00:00" }]
     : [
-        { key: "turno-1", label: t("1° turno · 19:00–21:00", "1st seating · 19:00–21:00"), times: serviceTimes.filter(time => time <= "21:00") },
-        { key: "turno-2", label: t("2° turno · 21:30–23:00", "2nd seating · 21:30–23:00"), times: serviceTimes.filter(time => time > "21:00") },
+        { value: "19:00", title: t("1° TURNO", "1st SEATING"), hours: "19:00–21:00" },
+        { value: "21:30", title: t("2° TURNO", "2nd SEATING"), hours: "21:30–23:00" },
       ];
+  const availableShifts = shifts.filter(shift => serviceTimes.includes(shift.value));
 
   return (
     <div ref={containerRef} className="scroll-container booking-page">
@@ -161,21 +162,16 @@ export default function BookingPage({ containerRef }) {
                 </div>
               </fieldset>
               <fieldset className="booking-choice-group" aria-describedby="booking-time-help">
-                <legend>{t("A che ora arrivate?", "What time will you arrive?")}</legend>
-                {timeGroups.filter(group => group.times.length > 0).map(group => (
-                  <div className="booking-time-group" key={group.key}>
-                    <p className="booking-time-group-label">{group.label}</p>
-                    <div className="booking-time-options">
-                      {group.times.map(time => <label className="booking-choice" key={time}>
-                        <input type="radio" name="time" required value={time} checked={bookingTime === time} onChange={() => { setBookingTime(time); setSelected(null); setReviewed(false); }} />
-                        <span className="booking-choice-face booking-time-face"><strong>{time}</strong>{time === '00:00' && <small>{t('Giorno dopo', 'Next day')}</small>}</span>
-                      </label>)}
-                    </div>
-                  </div>
-                ))}
+                <legend>{t("Scegli il turno", "Choose your seating")}</legend>
+                <div className="booking-time-options">
+                  {availableShifts.map(shift => <label className="booking-choice" key={shift.value}>
+                    <input type="radio" name="time" required value={shift.value} checked={bookingTime === shift.value} onChange={() => { setBookingTime(shift.value); setSelected(null); setReviewed(false); }} />
+                    <span className="booking-choice-face booking-shift-face"><strong>{shift.title}</strong><small>{shift.hours}</small></span>
+                  </label>)}
+                </div>
                 {!settings && !settingsError && <p className="booking-help" role="status">{t("Consulto gli orari nel registro di bordo…", "Checking times in the ship’s log…")}</p>}
               </fieldset>
-              <p id="booking-time-help" className="booking-help">{t("Cucina fino alle 23:30. Il giorno selezionato è la giornata di servizio; 00:00 indica la mezzanotte successiva.","Kitchen closes at 23:30. The selected date is the service day; 00:00 means the following midnight.")}</p>
+              <p id="booking-time-help" className="booking-help">{t("Tre turni: cena alle 19:00 o alle 21:30, dopocena alle 23:00.","Three seatings: dinner at 19:00 or 21:30, after-dinner at 23:00.")}</p>
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
               <div className="booking-guest-stepper" role="group" aria-labelledby="booking-guests-title">
                 <button type="button" disabled={guests <= 1} aria-label={t("Una persona in meno", "Remove one guest")} onClick={() => { setGuests(value => Math.max(1, value - 1)); setReviewed(false); }}>−</button>
@@ -222,7 +218,7 @@ export default function BookingPage({ containerRef }) {
             <div className="booking-fields">
               <label className="booking-field">{t("Nome e cognome", "Full name")} *<input name="name" autoComplete="name" required minLength="2" maxLength="60" placeholder={t("Nome e cognome", "Full name")} /></label>
               <label className="booking-field">{t("Telefono", "Phone")} *<input name="phone" type="tel" autoComplete="tel" required maxLength="30" placeholder="+39 …" /></label>
-              <div className="booking-field">{t("La tua scelta", "Your choice")}<p className="booking-selected-slot"><strong>{bookingType === "dopocena" ? "DOPOCENA" : "CENA"} · {bookingTime}</strong><small>{t("Puoi cambiare orario dai pulsanti sopra.", "You can change the time using the buttons above.")}</small></p></div>
+              <div className="booking-field">{t("La tua scelta", "Your choice")}<p className="booking-selected-slot"><strong>{bookingType === "dopocena" ? "DOPOCENA" : "CENA"} · {bookingTime}</strong><small>{t("Puoi cambiare turno dai pulsanti sopra.", "You can change the seating using the buttons above.")}</small></p></div>
               <div className="booking-field booking-field-email">
                 <label htmlFor="booking-email">{t("Email", "Email")} *</label>
                 <input id="booking-email" name="email" type="email" autoComplete="email" required maxLength="120" value={emailValue} onChange={handleEmailChange} aria-describedby={emailSuggestion ? "booking-email-suggestion" : undefined} />
