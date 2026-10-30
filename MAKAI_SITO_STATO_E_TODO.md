@@ -1,3 +1,7 @@
+## Riallineamento .env.example e guida ambienti — 29 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE (solo documentazione):** `.env.example` del Sito ridotto alle due variabili realmente lette dal gateway (`API_PROXY_TARGET`, `MAKAI_SITE_PROXY_SECRET`); rimosse le variabili legacy del backend Python ormai assenti dal repository e aggiunta `!.env.example` al `.gitignore`. Creato `../AMBIENTI.md` con la matrice dei tre progetti e i segreti che devono combaciare.
+- **Evidenze:** chiavi confrontate con `api/backend-gateway.mjs` e `vite.config.js`; `git diff --check` superato. **DEPLOYATO:** no. **VERIFICATO IN PRODUZIONE:** no. Nessuna variabile Vercel modificata. Su richiesta successiva il `.env` locale è stato ridotto alle 2 variabili del gateway e il `.env.local` (solo token OIDC) è stato eliminato.
+
 ## Risposte Nostromo confermate dal gestore — 23 ottobre 2026
 - **IMPLEMENTATO LOCALMENTE:** risposte immediate in tono piratesco per farina e salsa di soia senza glutine, variazioni per lattosio, piatti bambini (carne con osso, udon, Cestino del Pirata), cocktail poco dolci (Hurricane, Belladonna, Bourbon Special), dopocena dalle 22:30, cani ammessi, tavoli esterni e accessibilità in sedia a rotelle. Informazioni comunicate direttamente dal gestore in questa sessione; non sono verifiche fisiche del locale.
 - **Eventi:** formule aperitivo, cena/apericena e dopocena; Drink + torta/snack/prosecco riprese dai file backend locali. Preventivi e privatizzazioni rimandano al telefono. Nessun prezzo pubblicato nelle nuove risposte per le discordanze tra codice e documentazione. Le risposte per allergie conservano verifica ingredienti/preparazione e limite sulle contaminazioni; richieste operative restano al modulo prenotazioni.
@@ -382,3 +386,29 @@ _13 ottobre 2026; Drive `ecosistema makai/sito makai`._
 - **VERIFICATO IN PRODUZIONE:** navigazione browser a `/prenotazioni/gestisci` raggiunge la pagina Makai e rende il titolo “La tua prenotazione”. Senza token, il Backend risponde “Richiesta non disponibile.”, esito atteso per questo controllo. I metadati Vercel associano il dominio pubblico al deployment Git `e233f74c02e2f5da37433345076038975df09e06`, nel cui sorgente la route è presente.
 - **Email:** lettura Supabase in sola lettura della Edge Function `send-booking-email`, attiva versione 21; il template include il collegamento di gestione quando lo snapshot contiene un URL HTTPS conforme. Il codice locale online genera il token e lo aggiunge allo snapshot queued. Nessuna prova di un messaggio realmente ricevuto e nessun test con token valido: generazione live dello snapshot e accesso/modifica/cancellazione di una prenotazione non sono certificati.
 - **Evidenze e limiti:** build Vite locale riuscita (56 moduli). La navigazione pubblica senza token non può dimostrare il flusso cliente completo. Nessuna modifica applicativa, database, invio, commit, push o deploy; working tree preesistenti preservati. **DA FARE:** se il cliente non riesce a usare il link, controllare in modo controllato il contenuto della sua email e verificare con un token di test isolato il caricamento, la modifica e la cancellazione. **DEPLOYATO:** nessuna modifica in questo intervento.
+
+## Turni prenotazione nel form — 30 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** il form prenotazioni mostra CENA 19:00–23:00 con due gruppi di orari (1° turno 19:00–21:00; 2° turno 21:30–23:00) e DOPOCENA 23:00–00:00. Gli slot arrivano da `/api/booking-settings`; il raggruppamento è solo UI. Aggiornati anche i tempi modificabili nella gestione prenotazione e le risposte FAQ (“dalle 23:00”).
+- **FILE:** `src/pages/BookingPage.jsx`, `src/styles/prenotazioni.css`, `src/pages/BookingManagementPage.jsx`, `src/utils/nostromoFaq.js`, `tests/nostromo.test.js`.
+- **VERIFICHE LOCALI:** 42/42 test JavaScript e build Vite superati.
+- **DEPLOYATO:** commit `dbade9e` su `origin/main`; Vercel Production `sito-makai-5xgn0z6hp-lollo1.vercel.app` READY su `www.makaipigneto.it`.
+- **VERIFICATO IN PRODUZIONE:** `/prenotazioni` HTTP 200; bundle pubblicato con “1° turno”, “2° turno”, “19:00–21:00”, “21:30–23:00” e “23:00–00:00”.
+
+## Correzione: tre turni senza sotto orari — 30 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** il form mostra tre schede turno: 1° TURNO 19:00–21:00, 2° TURNO 21:30–23:00, DOPOCENA 23:00–00:00. Non ci sono più pulsanti per 19:30, 20:00, 20:30, 21:00, 22:00, 22:30, 23:30 o 00:00. Gli orari salvati sono 19:00, 21:30 e 23:00.
+- **FILE:** `src/pages/BookingPage.jsx`, `src/styles/prenotazioni.css`, `src/pages/BookingManagementPage.jsx`, `tests/bookingServicePicker.test.js`.
+- **VERIFICHE LOCALI:** 42/42 test e build Vite superati.
+- **DEPLOYATO:** commit `40732bc`; Vercel Production `sito-makai-mnkpb3390-lollo1.vercel.app` READY su `www.makaipigneto.it`.
+- **VERIFICATO IN PRODUZIONE:** form aperto nel browser; CENA mostra solo 1° TURNO e 2° TURNO, DOPOCENA mostra solo 23:00–00:00; nessun errore console.
+
+## Calendario: grigio locale chiuso, rosso non prenotabile — 30 ottobre 2026
+- **IMPLEMENTATO LOCALMENTE:** il calendario distingue `closed` (locale chiuso, grigio) da `online_closed` (prenotazioni online chiuse, rosso). Sono rossi anche `full`, `unverified`, `past` e `outside_window`. Aggiornata la legenda: “Locale chiuso” grigio, “Non prenotabile / online chiuso” rosso. Rimossa la frase “Tre turni: cena alle 19:00 o alle 21:30, dopocena alle 23:00.”.
+- **FILE:** `src/pages/BookingPage.jsx`, `src/styles/prenotazioni.css`, `tests/bookingServicePicker.test.js`.
+- **VERIFICHE LOCALI:** 42/42 test e build Vite.
+- **DEPLOYATO:** commit `e1ba0ab` e `280e251`; Vercel Production `sito-makai-btp4yfj19-lollo1.vercel.app` READY.
+- **VERIFICATO IN PRODUZIONE:** bundle pubblicato senza la frase “Tre turni”, con “Locale chiuso”, “Prenotazioni online chiuse” e “Non prenotabile / online chiuso”.
+
+## Audit calendario pre-apertura — 30 ottobre 2026
+- **VERIFICATO:** il form mostra i tre turni; il calendario usa `closed` grigio e `online_closed`/`full`/`unverified`/`past`/`outside_window` rossi. La frase “Tre turni…” è assente dal bundle Production.
+- **STATO API:** con manutenzione simulata off, disponibilità `19:00`, `21:30`, `23:00` 200; `20:00`, `22:30`, `23:30` 422.
+- **NOTA:** la manutenzione globale reale è ancora attiva, quindi il calendario non carica in Production finché non viene disattivata.

@@ -9,101 +9,87 @@ Tiki Cocktail Bar & Ristorante a tema One Piece — Pigneto, Roma
 ## Stack tecnico
 
 - **Frontend**: React 18 + Vite + Tailwind CSS 4
-- **Backend**: FastAPI (Python 3.11) su Vercel Serverless Functions
+- **Gateway API**: funzione Node `api/backend-gateway.mjs` che inoltra `/api/*` al Backend Makai
+- **Backend**: servizio FastAPI autonomo nel progetto `../backend-makai`
 - **Database**: Supabase (PostgreSQL)
-- **Deploy**: progetto Vercel del repository `sito-makai`, con frontend Vite e API FastAPI; Makai Agenda è un'applicazione e repository distinti.
+- **Deploy**: progetto Vercel del repository `sito-makai`, con frontend Vite e gateway Node; Makai Agenda è un'applicazione e repository distinti.
 
 ## Architettura dei progetti Makai
 
-`sito-makai` (`lollomakai-alt/sito-makai`) e `makai-agenda` (`lollomakai-alt/agenda-makai`) sono applicazioni indipendenti, ciascuna con il proprio repository GitHub e progetto Vercel. Condividono il progetto Supabase `fignmtkbwpbrmllbxoct` per database, autenticazione ADMIN e Edge Functions. Le regole di disponibilità e scrittura delle prenotazioni devono restare coerenti nei due progetti; verifica entrambi i repository prima di cambiare tali regole.
+`sito-makai` (`lollomakai-alt/sito-makai`), `makai-agenda` (`lollomakai-alt/agenda-makai`) e `backend-makai` sono applicazioni autonome, ciascuna con il proprio repository e progetto Vercel. Condividono il progetto Supabase `fignmtkbwpbrmllbxoct` per database, autenticazione ADMIN e Edge Functions. Le regole di disponibilità e scrittura delle prenotazioni devono restare coerenti tra i progetti; verificali prima di cambiare tali regole.
 
 Mappa operativa dei domini di produzione: `sito-makai` → `https://www.makaipigneto.it`; `makai-agenda` → `https://agenda-makai.vercel.app`. Conferma le associazioni correnti nelle impostazioni Domains dei rispettivi progetti Vercel: i file del repository non attestano la configurazione live.
 
 Il flusso ordinario di rilascio Vercel è commit e push su GitHub nel repository corretto, che attiva il deploy automatico del progetto collegato. Non usare Vercel CLI per deploy manuali salvo richiesta esplicita. Non includere modifiche dell'altro progetto nel commit. Modifiche SQL o Edge Function su Supabase sono operazioni separate: verificare prima l'ambiente e non applicarle o distribuirle implicitamente.
 
-Il backend di questo sito salva direttamente su Supabase le prenotazioni online. Dopo il commit di una nuova prenotazione confermata chiama `web-push-admin` con `new-online-booking`; la chiave privilegiata resta lato server e un errore push non annulla il booking. Le notifiche operative mostrate nell'Agenda e le notifiche Web Push di sistema sono meccanismi distinti. La PWA Agenda può essere installata su iPhone; le subscription Apple Web Push sono conservate e gestite tramite Supabase. La consegna effettiva a un dispositivo dipende anche dalla subscription, dalle chiavi VAPID e dalla configurazione Edge Function.
+Il Backend Makai (`../backend-makai`) salva direttamente su Supabase le prenotazioni online. Dopo il commit di una nuova prenotazione confermata chiama `web-push-admin` con `new-online-booking`; la chiave privilegiata resta lato server e un errore push non annulla il booking. Le notifiche operative mostrate nell’Agenda e le notifiche Web Push di sistema sono meccanismi distinti. La PWA Agenda può essere installata su iPhone; le subscription Apple Web Push sono conservate e gestite tramite Supabase. La consegna effettiva a un dispositivo dipende anche dalla subscription, dalle chiavi VAPID e dalla configurazione Edge Function.
 
 ## Struttura del repository
 
 ```
 .
-├── api/                    # Backend FastAPI
-│   ├── index.py           # Entry point (esporta `app = FastAPI(...)`)
-│   ├── automatic_chat.py  # Logica chatbot Nostromo
-│   ├── chat_menu.py       # Risposte su menu/cocktail
-│   ├── chat_events.py     # Gestione eventi/feste
-│   ├── prenotazioni.py    # Flusso prenotazioni
-│   ├── bookings/          # Moduli agenda (service, dates, tables, validators)
-│   ├── menu_data.py       # Fetch menu da Supabase
-│   ├── admin_auth.py      # Auth pannello admin (cookie session)
-│   ├── config.py          # Costanti configurabili via env
-│   └── requirements.txt   # Dipendenze Python
-├── src/                   # Frontend React
-│   ├── components/        # Componenti UI (ChatWidget, HeroSection, HomeMenuSection, ecc.)
-│   ├── pages/             # Pagine (MenuDetailPage, AboutPage, GalleryPage, Privacy.jsx)
-│   ├── styles/            # CSS per sezione
-│   ├── data/siteContent.js# Contenuto pagine menu (food/drink)
-│   ├── hooks/             # Hook custom (usePageMotion)
-│   └── sito.jsx           # Entry point Vite
-├── public/images/         # Asset statici serviti da Vite
-├── vercel.json            # Configurazione Vercel Services
+├── api/
+│   └── backend-gateway.mjs # Gateway Node: inoltra /api/* al Backend Makai
+├── src/                    # Frontend React
+│   ├── components/         # Componenti UI (ChatWidget, HeroSection, HomeMenuSection, ecc.)
+│   ├── pages/              # Pagine (MenuDetailPage, AboutPage, GalleryPage, Privacy.jsx)
+│   ├── styles/             # CSS per sezione
+│   ├── data/siteContent.js # Contenuto pagine menu (food/drink)
+│   ├── hooks/              # Hook custom (usePageMotion)
+│   └── sito.jsx            # Entry point Vite
+├── public/images/          # Asset statici serviti da Vite
+├── tests/                  # Test JavaScript
+├── .env.example            # Variabili attese in produzione
+├── vercel.json             # Configurazione Vercel (build + gateway)
 └── package.json
 ```
 
 ## Sviluppo locale
 
-```bash
-# Terminal 1: Backend (FastAPI su :8000)
-cd api
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp ../.env.example .env   # compila le variabili
-uvicorn index:app --reload --port 8000
+Il Sito non contiene più il backend Python: è solo frontend + gateway. Per le API
+avvia il progetto autonomo `../backend-makai`.
 
-# Terminal 2: Frontend (Vite su :5173)
+```bash
+# Terminal 1: Backend Makai su :8000
+cd ../backend-makai
+UV_PROJECT_ENVIRONMENT=.venv-py312 uv sync --group dev
+cp .env.example .env   # compila le variabili
+UV_PROJECT_ENVIRONMENT=.venv-py312 uv run uvicorn app:app --host 127.0.0.1 --port 8000
+
+# Terminal 2: Sito (Vite su :5173)
 npm install
 npm run dev
 ```
 
 Il frontend usa il proxy Vite (`/api` → `http://127.0.0.1:8000`) definito in `vite.config.js`.
+Per il Sito non serve un `.env` locale.
 
 ## Variabili d'ambiente
 
-Crea un file `.env` nella root (non committato) basandoti su `.env.example`:
+In produzione servono soltanto due variabili server-side. Fanno riferimento a
+`.env.example`; la matrice completa dei tre progetti è in [`../AMBIENTI.md`](../AMBIENTI.md).
 
-```env
-# Frontend (Vite)
-VITE_API_URL=http://localhost:8000/api
+| Variabile | Valore |
+| --- | --- |
+| `API_PROXY_TARGET` | `https://backend-makai.vercel.app` (origine, senza `/api`) |
+| `MAKAI_SITE_PROXY_SECRET` | almeno 32 caratteri, **identica** a quella del Backend |
 
-# Backend (FastAPI)
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxx
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxxx
-CHAT_SESSION_SECRET=almeno-32-caratteri-casuali
-ADMIN_SESSION_SECRET=almeno-32-caratteri-casuali
-ADMIN_PASSWORD=la-tua-password-admin
-ADMIN_COOKIE_SECURE=false
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
-BOOKINGS_AUTO_CLEANUP=false
-```
+Il Sito non usa più `DATABASE_URL`, `SUPABASE_*`, `ADMIN_*`,
+`CHAT_SESSION_SECRET`, `MAKAI_PUSH_SECRET`, `ALLOWED_ORIGINS` né variabili
+`VITE_*` proprie: appartengono al progetto Vercel `backend-makai` o a Supabase.
+Non usare mai il prefisso `VITE_` per un segreto.
 
 ## Deploy su Vercel
 
-`vercel.json` configura un singolo progetto per questo repository: Vite compila il frontend in `dist/` e FastAPI è esposto dalle funzioni serverless in `api/`, con le rotte `/api/*`. È distinto dal progetto Vercel del repository Agenda.
+`vercel.json` configura Vite in `dist/` e la funzione Node
+`api/backend-gateway.mjs`: il browser chiama gli stessi URL `/api/*` e il gateway
+li inoltra al Backend Makai. È distinto dal progetto Vercel del repository Agenda.
 
 Il rilascio ordinario avviene con commit e push su GitHub in `sito-makai`; il progetto Vercel collegato dovrebbe avviare il deploy automatico. Verifica il collegamento Git e il dominio `www.makaipigneto.it` nella dashboard Vercel: i file locali non provano la configurazione live. Non usare Vercel CLI per deploy manuali salvo richiesta esplicita.
 
-In **Settings → Environment Variables** del progetto, aggiungi le variabili server-side:
-   - `SUPABASE_URL`
-   - `SUPABASE_PUBLISHABLE_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `CHAT_SESSION_SECRET` (≥32 char)
-   - `ADMIN_SESSION_SECRET` (≥32 char)
-   - `ADMIN_PASSWORD` (password pannello admin)
-   - `ADMIN_COOKIE_SECURE=true`
-   - `ALLOWED_ORIGINS=https://tuo-dominio.vercel.app`
-
-Le variabili privilegiate e le password devono restare solo nell'ambiente server; mai inserirle nelle variabili `VITE_*`, nel browser o nel repository.
+In **Settings → Environment Variables** del progetto imposta solo
+`API_PROXY_TARGET` e `MAKAI_SITE_PROXY_SECRET`, poi esegui **Redeploy**. Entrambe
+sono solo server-side: non inserirle in variabili `VITE_*`, nel browser o nel repository.
 
 ## Funzionalità principali
 

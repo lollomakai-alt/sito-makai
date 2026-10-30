@@ -18,6 +18,7 @@ dist-ssr
 # Variabili d'ambiente e credenziali
 .env
 .env.*
+!.env.example
 
 
 # Python
