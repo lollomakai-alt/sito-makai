@@ -250,7 +250,7 @@ test('owner-approved venue answers work without upstream chat and preserve booki
   const examples = [
     ['Avete piatti per bambini?', /carne con osso.*udon.*Cestino del Pirata/],
     ['Mi consigli un cocktail poco dolce?', /Hurricane.*Belladonna.*Bourbon Special/],
-    ['Posso venire a bere dopo cena?', /22:30.*attendi la conferma/],
+    ['Posso venire a bere dopo cena?', /23:00.*attendi la conferma/],
     ['Posso portare il cane?', /benvenuto/],
     ['Avete tavoli all’aperto?', /Abbiamo anche tavoli all’aperto/],
     ['Siete accessibili in sedia a rotelle?', /accessibile in sedia a rotelle/],

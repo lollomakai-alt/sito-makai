@@ -25,6 +25,6 @@ export function approvedVenueReply(text) {
   if (/\b(privatizz\w*|esclusiva|tutto il locale)\b/.test(text)) return `Vuoi il Makai tutto per la tua ciurma? Chiama il ${phone} per valutare disponibilità, spazi e condizioni della privatizzazione.`;
   if (/\b(preventiv\w*)\b/.test(text)) return `Per organizzare il tuo banchetto, chiama la ciurma al ${phone}! Tieni pronti data, numero di invitati e tipo di festa: tracceremo insieme la rotta.`;
   if (/\b(fest\w*|compleann\w*|laure\w*|event\w*|pacchett\w*|apericena|aperitivo|menu per gruppi)\b/.test(text)) return `Compleanno, laurea o ciurma in festa? Puoi scegliere tra aperitivo, cena/apericena e dopocena. Per il dopocena trovi le formule Drink + torta, Drink + snack oppure Drink + prosecco. Chiama il ${phone} per organizzare la tua festa!`;
-  if (/\b(dopocena|dopo cena)\b/.test(text)) return "Eccome, Capitano! Dalle 22:30 puoi salire a bordo anche solo per bere un cocktail. Se vuoi prenotare, scegli DOPOCENA su /prenota e attendi la conferma della ciurma.";
+  if (/\b(dopocena|dopo cena)\b/.test(text)) return "Eccome, Capitano! Dalle 23:00 puoi salire a bordo anche solo per bere un cocktail. Se vuoi prenotare, scegli DOPOCENA su /prenota e attendi la conferma della ciurma.";
   return null;
 }
