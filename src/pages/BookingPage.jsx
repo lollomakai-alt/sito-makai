@@ -122,7 +122,7 @@ export default function BookingPage({ containerRef }) {
         ? t('Risposta non ricevuta. Riprova con gli stessi dati: la richiesta non verrà duplicata.', 'No response received. Retry with the same details: your request will not be duplicated.') : error instanceof SyntaxError ? t('Risposta non leggibile. Riprova con gli stessi dati per verificare l’esito.', 'Unreadable response. Retry with the same details to check the outcome.') : error.message);
     } finally { window.clearTimeout(timer); submitting.current = false; setSaving(false); }
   }
-  const labels = { closed: t("Chiuso", "Closed"), outside_window: t("Non ancora prenotabile", "Outside booking window"), unverified: t("Disponibilità da verificare", "Availability unverified"), past: t("Data passata", "Past date"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available"), manual_review: t("Richiesta da confermare", "Request needs confirmation") };
+  const labels = { closed: t("Locale chiuso", "Restaurant closed"), online_closed: t("Prenotazioni online chiuse", "Online bookings closed"), outside_window: t("Non prenotabile", "Not bookable"), unverified: t("Non prenotabile", "Not bookable"), past: t("Non prenotabile", "Not bookable"), full: t("Non disponibile per il gruppo", "Unavailable for your group"), available: t("Disponibile", "Available"), manual_review: t("Richiesta da confermare", "Request needs confirmation") };
   const serviceTimes = settings?.services?.[bookingType] || [];
   const shifts = bookingType === "dopocena"
     ? [{ value: "23:00", title: t("DOPOCENA", "AFTER DINNER"), hours: "23:00–00:00" }]
@@ -161,7 +161,7 @@ export default function BookingPage({ containerRef }) {
                   </label>)}
                 </div>
               </fieldset>
-              <fieldset className="booking-choice-group" aria-describedby="booking-time-help">
+              <fieldset className="booking-choice-group">
                 <legend>{t("Scegli il turno", "Choose your seating")}</legend>
                 <div className="booking-time-options">
                   {availableShifts.map(shift => <label className="booking-choice" key={shift.value}>
@@ -171,7 +171,6 @@ export default function BookingPage({ containerRef }) {
                 </div>
                 {!settings && !settingsError && <p className="booking-help" role="status">{t("Consulto gli orari nel registro di bordo…", "Checking times in the ship’s log…")}</p>}
               </fieldset>
-              <p id="booking-time-help" className="booking-help">{t("Tre turni: cena alle 19:00 o alle 21:30, dopocena alle 23:00.","Three seatings: dinner at 19:00 or 21:30, after-dinner at 23:00.")}</p>
               <h2 id="booking-guests-title"><span>01</span> {t("Quante persone siete?", "How many guests?")}</h2>
               <div className="booking-guest-stepper" role="group" aria-labelledby="booking-guests-title">
                 <button type="button" disabled={guests <= 1} aria-label={t("Una persona in meno", "Remove one guest")} onClick={() => { setGuests(value => Math.max(1, value - 1)); setReviewed(false); }}>−</button>
@@ -208,7 +207,7 @@ export default function BookingPage({ containerRef }) {
                   return <button key={index} type="button" className={`booking-day ${state}`} disabled={loading || !currentAvailability || !selectable} aria-pressed={active} aria-label={`${formatDate(date)}: ${labels[state]}`} onClick={() => { setSelected(date); setReviewed(false); }}><b>{index + 1}</b><span aria-hidden="true">{active ? "✓" : selectable ? "•" : state === "full" ? "×" : "–"}</span></button>;
                 })}
               </div>
-              <div className="booking-legend"><span>🟢 {t("Disponibile", "Available")}</span>{bookingType === "dopocena" && <span>🟡 {t("Richiesta da confermare", "Request needs confirmation")}</span>}<span>🔴 {t("Non disponibile per il gruppo", "Unavailable for your group")}</span><span>— {t("Chiuso / non prenotabile", "Closed / unavailable")}</span></div>
+              <div className="booking-legend"><span>🟢 {t("Disponibile", "Available")}</span>{bookingType === "dopocena" && <span>🟡 {t("Richiesta da confermare", "Request needs confirmation")}</span>}<span>🔴 {t("Non prenotabile / online chiuso", "Not bookable / online closed")}</span><span>⚪ {t("Locale chiuso", "Restaurant closed")}</span></div>
               {currentAvailability && !Object.values(currentAvailability.days).some(state => state === "available" || bookingType === "dopocena" && state === "manual_review") && <p className="booking-help">{t("Nessun approdo disponibile in questo mese per la vostra ciurma. Controlla il mese successivo o chiamaci.", "No dates available this month for your crew. Check the next month or call us.")}</p>}
               <p className="booking-date-feedback" aria-live="polite">{selected ? formatDate(selected) : ""}</p>
             </section>}

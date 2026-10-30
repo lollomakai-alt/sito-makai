@@ -62,8 +62,8 @@
 .booking-day > span { font-size: .8rem; }
 .booking-day.available { color: #d0f8da; background: #204934; border-color: #548669; }
 .booking-day.manual_review { color: #f6df9b; background: #554522; border-color: #b08d2f; }
-.booking-day.full { color: #f7bdba; background: #4e252a; border-color: #93515a; }
-.booking-day.closed, .booking-day.outside_window, .booking-day.unverified, .booking-day.past { color: #9aa5ae; background: #202c36; }
+.booking-day.online_closed, .booking-day.full, .booking-day.outside_window, .booking-day.unverified, .booking-day.past { color: #f7bdba; background: #4e252a; border-color: #93515a; }
+.booking-day.closed { color: #9aa5ae; background: #202c36; }
 .booking-day[aria-pressed="true"] { outline: 2px solid #f1cf73; outline-offset: 2px; background: #335840; }
 .booking-page button:disabled { cursor: not-allowed; }
 .booking-month button:disabled { opacity: .35; }
