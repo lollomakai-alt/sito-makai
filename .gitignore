@@ -39,3 +39,6 @@ venv/
 *.sw?
 .vercel
 .env*
+
+# Metadati locali di analisi
+.engram*/
